@@ -40,8 +40,10 @@ humans-own [
   death-chance ;; Posibilidad de muerte
   ongoing-infection-hours ;; Horas de infección en curso
   symptoms_delay ;; Retraso de los sintomas
-  aware_of_infection? ;; Consciente de la infección?
+  aware_of_infection? ;; Consciente de la infección? (la persona es conciente de estar infectada)
   infectedby ;; Infectado por
+  infection_detected ;; Infectado con infeccion detectada
+  days_to_detect ;; Días que pasan desde el dia 1 a que es detectado
 ]
 
 statistic_agents-own [
@@ -80,7 +82,7 @@ to infection_exposure ;; Exposición a la infección
     let number_of_infected_around count infected_around
     if number_of_infected_around > 0 [
       let within_contagion_distance (random(metres_per_patch) + 1) ;; Asumiendo que cada patch representa los metros por patch.
-      show age-group
+      ;show age-group ;; imprimir rango etario
       ; Filtrar la distancia social por rango etario
       if age-group = 9 [
         set within_contagion_distance random-float within_contagion_distance + ( keep_social_distancing_0-9 )
@@ -126,6 +128,7 @@ to get_infected
   set symptoms_delay 24 * ( random-normal average-symptoms-show 4.0)
   set ongoing-infection-hours 0
   set cumulative_infected cumulative_infected + 1
+  set days_to_detect (random(15) + 1)
 end
 
 to get-healthy
@@ -167,6 +170,11 @@ to check_health_state
           set ontreatment? true
         ]
       ]
+    ]
+    if (ongoing-infection-hours / 24 = days_to_detect)
+    [
+      set infection_detected true
+      set color violet
     ]
     if (ongoing-infection-hours = aggravated_symptoms_day) ;;Check if patient is going to die
     [
@@ -307,6 +315,8 @@ to setup-people [#number #age-group]
       set aware_of_infection? false
       set infectedby nobody
       set size 4
+      set infection_detected false
+      set days_to_detect 0
 
 
       ifelse age-group <= age_group_0_9 [
@@ -907,8 +917,8 @@ GRAPHICS-WINDOW
 100
 -100
 100
-1
-1
+0
+0
 1
 Hours
 60.0
@@ -1971,7 +1981,7 @@ SWITCH
 789
 show_plot_1?
 show_plot_1?
-1
+0
 1
 -1000
 
@@ -2018,7 +2028,7 @@ INPUTBOX
 1987
 405
 iterations
-0.0
+1.0
 1
 0
 Number
