@@ -1,3 +1,7 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; ABM - Covid19 ;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;
+
 extensions [csv]
 breed [humans human]
 breed [statistic_agents statistic_agent]
@@ -42,8 +46,9 @@ humans-own [
   symptoms_delay ;; Retraso de los sintomas
   aware_of_infection? ;; Consciente de la infección? (la persona es conciente de estar infectada)
   infectedby ;; Infectado por
-  infection_detected ;; Infectado con infeccion detectada
+  infection_detected? ;; Infectado con infeccion detectada
   days_to_detect ;; Días que pasan desde el dia 1 a que es detectado
+  effective_isolation? ;; Contagiado con aislamiento efectivo
 ]
 
 statistic_agents-own [
@@ -78,7 +83,7 @@ end
 to infection_exposure ;; Exposición a la infección
   if (not gotinfection?) [
     let people_around humans-on neighbors
-    let infected_around people_around with [infected? = true and not ontreatment? and ( ongoing-infection-hours > (average_days_for_contagion * 24 )) ]
+    let infected_around people_around with [infected? = true and not effective_isolation? and not ontreatment? and ( ongoing-infection-hours > (average_days_for_contagion * 24 )) ]
     let number_of_infected_around count infected_around
     if number_of_infected_around > 0 [
       let within_contagion_distance (random(metres_per_patch) + 1) ;; Asumiendo que cada patch representa los metros por patch.
@@ -173,8 +178,17 @@ to check_health_state
     ]
     if (ongoing-infection-hours / 24 = days_to_detect)
     [
-      set infection_detected true
+      set infection_detected? true
       set color violet
+      let infected_count count humans with [infected?]
+      let detected_count count humans with [infection_detected?]
+      let isolated_count count humans with [effective_isolation?]
+      if (isolated_count <= detected_count * (%isolated_detected / 100)) ;; If  isolated <= %detected then set efective isolation
+      [
+        set effective_isolation? true
+        ;show detected_count
+        ;show isolated_count
+      ]
     ]
     if (ongoing-infection-hours = aggravated_symptoms_day) ;;Check if patient is going to die
     [
@@ -210,7 +224,7 @@ to check_health_state
 end
 
 to move [ #speed ]
-  if not ontreatment?
+  if (not ontreatment? and not effective_isolation?)
   [
     rt random-float 360
     let next_patch_color white
@@ -315,8 +329,9 @@ to setup-people [#number #age-group]
       set aware_of_infection? false
       set infectedby nobody
       set size 4
-      set infection_detected false
+      set infection_detected? false
       set days_to_detect 0
+      set effective_isolation? false
 
 
       ifelse age-group <= age_group_0_9 [
@@ -884,7 +899,6 @@ to go
   if change_lockdown_condition? != complete_lockdown? [
     go_back_home
   ]
-
 
   tick
 end
@@ -2028,7 +2042,7 @@ INPUTBOX
 1987
 405
 iterations
-1.0
+0.0
 1
 0
 Number
@@ -2043,6 +2057,21 @@ prueba7
 1
 0
 String
+
+SLIDER
+685
+492
+944
+525
+%isolated_detected
+%isolated_detected
+0
+100
+50.0
+1
+1
+%
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
