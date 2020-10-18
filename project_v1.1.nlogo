@@ -21,8 +21,7 @@ globals [
   number_of_deaths  ;; Número de muertos
   death_list        ;; Lista de muertos
   city_area_patches   ;; Parches del área de la ciudad
-  roads_area_patches   ;; Parches de área de la parcela
-  change_lockdown_condition?   ;; ELIMINAR
+  ;roads_area_patches   ;; Parches de área de la parcela
   cumulative_infected   ;; Infectados acumulados
   last_cumulative   ;; Ultimo acumulado
   cumulative_aware_of_infection   ;; Conocimiento de infección acumulativo
@@ -30,7 +29,7 @@ globals [
   logged_transmitters   ;; Transmisores registrados
   R0_global   ;; Número de reproducción
   prioritise_elderly?   ;; Priorizar a los ancianos?
-  filename
+  filename ;; Nombre del archivo CSV
 ]
 
 humans-own [
@@ -52,7 +51,7 @@ humans-own [
 ]
 
 statistic_agents-own [
-  age-group  ;; Grupo de edad
+  age-group  ;; Grupo etario
   recovered  ;; Recuperados
   deaths     ;; Muertos
 ]
@@ -78,17 +77,17 @@ to-report calculate_R0 ;; Calcular el número de reproducciones
   ]
 end
 
-; Procedimientos de humanos
+;; Procedimientos de humanos
 
-to infection_exposure ;; Exposición a la infección
+to infection_exposure
   if (not gotinfection?) [
     let people_around humans-on neighbors
     let infected_around people_around with [infected? = true and not effective_isolation? and not ontreatment? and ( ongoing-infection-hours > (average_days_for_contagion * 24 )) ]
     let number_of_infected_around count infected_around
     if number_of_infected_around > 0 [
       let within_contagion_distance (random(metres_per_patch) + 1) ;; Asumiendo que cada patch representa los metros por patch.
-      ;show age-group ;; imprimir rango etario
-      ; Filtrar la distancia social por rango etario
+
+      ;; Filtrar la distancia social por rango etario
       if age-group = 9 [
         set within_contagion_distance random-float within_contagion_distance + ( keep_social_distancing_0-9 )
       ] if age-group = 19 [
@@ -109,12 +108,12 @@ to infection_exposure ;; Exposición a la infección
         set within_contagion_distance random-float within_contagion_distance + ( keep_social_distancing_80 )
       ]
 
-      ; Posibilidad de contagio según grupo etario.
+      ;; Posibilidad de contagio según grupo etario.
       if (contagion-chance >= (random(100) + 1) and within_contagion_distance <= maximum_contagion_distance) [
         let transmitter_person nobody
         ask one-of infected_around [ set transmitter_person who ]
         set logged_transmitters lput transmitter_person logged_transmitters
-        if length ( logged_transmitters ) > 800 [ ; No permita que la lista crezca sin fin, elimine los elementos más antiguos.
+        if length ( logged_transmitters ) > 800 [ ;; No permita que la lista crezca sin fin, elimine los elementos más antiguos.
           set logged_transmitters but-first logged_transmitters
         ]
        get_infected
@@ -163,7 +162,7 @@ to check_health_state
           ]
         ]
         [
-          if %medical-care-availability >= 25 [ ;;If not an elderly person then only take medical care if availability >= 25%
+          if %medical-care-availability >= 25 [ ;; Si no es una persona mayor, solo reciba atención médica si la disponibilidad es> = 25%
             if get-medical-care = true [
               set ontreatment? true
             ]
@@ -176,30 +175,23 @@ to check_health_state
         ]
       ]
     ]
-    if (ongoing-infection-hours / 24 = days_to_detect)
-    [
+    if (ongoing-infection-hours / 24 = days_to_detect) [
       set infection_detected? true
       set color violet
       let infected_count count humans with [infected?]
       let detected_count count humans with [infection_detected?]
       let isolated_count count humans with [effective_isolation?]
-      if (isolated_count <= detected_count * (%isolated_detected / 100)) ;; If  isolated <= %detected then set efective isolation
-      [
+      if (isolated_count <= detected_count * (%isolated_detected / 100)) [ ;; Si aislados <= %detectados, dar aislamiento efectivo
         set effective_isolation? true
         ;show detected_count
         ;show isolated_count
       ]
     ]
-    if (ongoing-infection-hours = aggravated_symptoms_day) ;;Check if patient is going to die
-    [
-      ;;;;;;;;;; Decide if patient survived or not the infection:
+    if (ongoing-infection-hours = aggravated_symptoms_day) [;; Verifica si el paciente va a morir
       let chance_to_die 0
       let severity_factor 1
-      ;if ( ( chance_of_severe_infection * 1000 ) >= random(100000) ) [ ;; Patient got a severe infection increasing the death chance by a severity factor
-        ;set severity_factor severity_death_chance_multiplier
-      ;]
       ifelse (ontreatment?) [
-        set chance_to_die ((death-chance * 1000) * severity_factor) * 0.5 ;; Death chance is reduced to 50%, Survival chance is increased by 50%
+        set chance_to_die ((death-chance * 1000) * severity_factor) * 0.5 ;; La probabilidad de muerte se reduce al 50%, la probabilidad de supervivencia aumenta en un 50%
       ]
       [
         set chance_to_die (death-chance * 1000) * severity_factor
@@ -212,8 +204,7 @@ to check_health_state
       ]
     ]
 
-    ifelse (ongoing-infection-hours >= infection-length)
-    [
+    ifelse (ongoing-infection-hours >= infection-length) [
       set ongoing-infection-hours 0
       get-healthy
     ]
@@ -224,12 +215,9 @@ to check_health_state
 end
 
 to move [ #speed ]
-  if (not ontreatment? and not effective_isolation?)
-  [
+  if (not ontreatment? and not effective_isolation?) [
     rt random-float 360
-    let next_patch_color white
-    ask patch-ahead 1 [ set next_patch_color original_map_color ]
-    ifelse (next_patch_color = white ) [ fd #speed ] [ fd #speed ] ;; OPTIMIZAR
+    fd #speed
   ]
 end
 
@@ -238,40 +226,13 @@ to delete-person
   die
 end
 
-; Setup Procedures
+;; Setup
 
-to draw_road_lines ;; OPTIMIZAR (NO SE ESTA UTILIZA)
-  let rows 1
-  repeat 8 [
-    ask patches with [pxcor > -260 and pxcor < 260 and pycor = -250 + (rows * 60) and pcolor = white ][set pcolor yellow]
-    let roads 1
-    repeat 3 [
-      ask patches with [pxcor = -260 + (rows * 60) + roads and pycor > -250 and pycor < 260 and pcolor = white ][set pcolor yellow]
-      set roads roads + 1
-    ]
-    set rows rows + 1
-  ]
-end
-
-to create_city_map ;; OPTIMIZAR (CÓDIGO NO SE UTILIZA DEL TODO)
+to create_city_map
   ask patches with [pxcor > -100 and pxcor < 100 and pycor > -100 and pycor < 100 ] [ set pcolor white ]
-  ;let rows 1
-  ;repeat 8 [
-    ;ask patches with [pxcor > -260 and pxcor < 260 and pycor = -250 + (rows * 60) ][set pcolor yellow]
-    ;let roads 1
-    ;repeat 3 [
-      ;ask patches with [pxcor = -260 + (rows * 60) + roads and pycor > -250 and pycor < 260 ][set pcolor yellow]
-      ;set roads roads + 1
-    ;]
-    ;set rows rows + 1
-  ;]
 end
 
-to setup-globals ;; OPTIMIZAR
-  ;ifelse load_city_map? [
-    ;import-pcolors "California_outline_white.png"
-    ;draw_road_lines
-  ;]
+to setup-globals
 
   create_city_map
   ask patches [ set original_map_color pcolor ]
@@ -290,20 +251,14 @@ to setup-globals ;; OPTIMIZAR
   set cumulative_infected 0
   set last_cumulative 0
   set city_area_patches patches with [ pcolor != black ]
-  set roads_area_patches patches with [ pcolor = yellow ]
-  set complete_lockdown? false
-  set change_lockdown_condition? false
   set prioritise_elderly? false
-  set partial_lockdown? false
   set cumulative_aware_of_infection 0
   set last_cumulative_aware_of_infection 0
   set logged_transmitters[]
-  ;;set total_humans count humans
 end
 
 to setup_statistic_agent [ #age-group ]
-  create-statistic_agents 1
-  [
+  create-statistic_agents 1 [
     set age-group #age-group
     set recovered 0
     set deaths 0
@@ -312,8 +267,7 @@ to setup_statistic_agent [ #age-group ]
 end
 
 to setup-people [#number #age-group]
-  create-humans #number
-    [
+  create-humans #number [
       let random_x 0
       let random_y 0
       ask one-of city_area_patches [ set random_x pxcor set random_y pycor ]
@@ -598,121 +552,9 @@ to free-medical-care
   set medical_care_used medical_care_used - 1
 end
 
-to people-enter-city [#people_entering #percentage_entering_infected_population]
-  let entering_per_age_group #people_entering / 9
-  setup-people entering_per_age_group age_group_0_9
-  setup-people entering_per_age_group age_group_10_19
-  setup-people entering_per_age_group age_group_20_29
-  setup-people entering_per_age_group age_group_30_39
-  setup-people entering_per_age_group age_group_40_49
-  setup-people entering_per_age_group age_group_50_59
-  setup-people entering_per_age_group age_group_60_69
-  setup-people entering_per_age_group age_group_70_79
-  setup-people entering_per_age_group age_group_80
-  infect_people #people_entering * #percentage_entering_infected_population / 100
-end
-
-to people-leave-city [#people_leaving]
-  ask n-of #people_leaving humans with [not ontreatment?] [ delete-person ]
-end
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;   SOCIAL INTERACTIONS - HUMANS PROCEDURES   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-to gather_in_schools
-  if partial_lockdown? [ stop ]
-  let gatherings_size 200 ;Students per school 200
-  repeat active_schools [
-    let place_x 0
-    let place_y 0
-    ask one-of city_area_patches [ set place_x pxcor set place_y pycor]
-    ask up-to-n-of gatherings_size humans with [ ( age-group = age_group_0_9 or age-group = age_group_10_19 ) and (not aware_of_infection?)][set xcor place_x - 4 + random(8) set ycor place_y - 4 + random(8) ]
-  ]
-end
-
-to gather_in_colleges
-  if partial_lockdown? [ stop ]
-  let gatherings_size 300 ;Students per college
-  repeat active_colleges [
-    let place_x 0
-    let place_y 0
-    ask one-of city_area_patches [ set place_x pxcor set place_y pycor]
-    ask up-to-n-of gatherings_size humans with [ age-group = age_group_20_29 and not aware_of_infection? ][set xcor place_x - 4 + random(8) set ycor place_y - 4 + random(8) ]
-  ]
-end
-
-to gather_in_hosp_venues
-  if partial_lockdown? [ stop ]
-  let gatherings_size 40 ;40 people per venue
-  repeat active_hosp_venues [
-    let place_x 0
-    let place_y 0
-    ask one-of city_area_patches [ set place_x pxcor set place_y pycor]
-    ask up-to-n-of gatherings_size humans with [ not aware_of_infection? ][set xcor place_x - 2 + random(3) set ycor place_y - 2 + random(3) ]
-  ]
-end
-
-to gather_in_public_transport_lines
-  if partial_lockdown? [ stop ]
-  let gatherings_size 60 ;60 people per bus/tram line
-  repeat active_public_transport_lines [
-    let place_x 0
-    let place_y 0
-    ask one-of roads_area_patches [ set place_x pxcor set place_y pycor]
-    ask up-to-n-of gatherings_size humans with [ not aware_of_infection? ][set xcor place_x - 2 + random(3) set ycor place_y - 4 + random(10) ]
-  ]
-end
-
-to gather_in_adult_venues
-  if partial_lockdown? [ stop ]
-  let gatherings_size 40 ; 40 people per venue
-  repeat active_adult_venues [
-    let place_x 0
-    let place_y 0
-    ask one-of city_area_patches [ set place_x pxcor set place_y pycor]
-    ask up-to-n-of gatherings_size humans with [ ( age-group != age_group_0_9 and age-group != age_group_10_19 ) and not aware_of_infection? ][set xcor place_x - 2 + random(3) set ycor place_y - 2 + random(3) ]
-  ]
-end
-
-to gather_in_senior_venues
-  if partial_lockdown? [ stop ]
-  let gatherings_size 40 ; 40 people per venue
-  repeat active_adult_venues [
-    let place_x 0
-    let place_y 0
-    ask one-of city_area_patches [ set place_x pxcor set place_y pycor]
-    ask up-to-n-of gatherings_size humans with [ ( age-group = age_group_60_69 or age-group = age_group_70_79 or age-group = age_group_80 ) and not aware_of_infection? ][set xcor place_x - 2 + random(3) set ycor place_y - 2 + random(3) ]
-  ]
-end
-
-to gather_in_food_shops
-  if partial_lockdown? [ stop ]
-  let gatherings_size 50 ; 50 people in a supermarket, bakery, small shop
-  repeat active_adult_venues [
-    let place_x 0
-    let place_y 0
-    ask one-of city_area_patches [ set place_x pxcor set place_y pycor]
-    ask up-to-n-of gatherings_size humans with [ age-group != age_group_0_9 and not aware_of_infection? ][set xcor place_x - 2 + random(4) set ycor place_y - 2 + random(4) ]
-  ]
-end
-
-to go_back_home
-  ask humans with [ not aware_of_infection? ]
-  [
-    let random_x 0
-    let random_y 0
-    ask one-of city_area_patches [ set random_x pxcor set random_y pycor ]
-    setxy random_x random_y
-  ]
-end
 
 ; Go procedures
-
 to go
-
-  ;let death_0-9 count [deaths] of one-of statistic_agents with [age-group = age_group_0_9]
-  ;print([deaths] of one-of statistic_agents with [age-group = age_group_80])
 
   if iterations = 0 [
     stop
@@ -869,35 +711,14 @@ to go
   ifelse elapsed-day-hours >= 24
   [
     if log_infection_data? [
-      ;let delta_cumulative cumulative_infected / (last_cumulative + 1)
-      ;;print ( word ceiling (ticks / 24) "," cumulative_infected "," number_of_deaths "," delta_cumulative )
       let delta_cumulative cumulative_aware_of_infection / (last_cumulative_aware_of_infection + 1)
-      ;;print ( word ceiling (ticks / 24) "," cumulative_infected "," number_of_deaths "," delta_cumulative )
       set last_cumulative_aware_of_infection cumulative_aware_of_infection
       set last_cumulative cumulative_infected
-    ]
-    if not complete_lockdown? [
-      ;;;;; People enter and leave the city once a day:
-      people-leave-city people_entering_city_per_day; people_leaving_city_per_day
-      people-enter-city people_entering_city_per_day infected_visitors;[#people_entering #percentage_entering_infected_population]
-      ;;;;; Gatherings once a day
-      gather_in_schools
-      gather_in_colleges
-      gather_in_adult_venues
-      gather_in_senior_venues
     ]
     set elapsed-day-hours 1
   ]
   [
-    if not complete_lockdown? [
-      if elapsed-day-hours mod 7 = 0 [ gather_in_hosp_venues ] ;;3 times a day
-      if elapsed-day-hours mod 10 = 0 [ gather_in_food_shops ] ;;2 times a day
-      if elapsed-day-hours mod 2 = 0 [ gather_in_public_transport_lines ] ;; 12 times a day
-    ]
     set elapsed-day-hours elapsed-day-hours + 1
-  ]
-  if change_lockdown_condition? != complete_lockdown? [
-    go_back_home
   ]
 
   tick
