@@ -1932,6 +1932,7 @@ Los agentes contagiados, pueden ser detectados de forma aleatoria entre el día 
 
 Constantemente se realiza una revisión del estado de salud de la poblacion, donde se verifica la capacidad para tratar a los contagiados, la detección del contagio y su posibilidad de muerte por la enfermedad.
 
+
 Desplazamiento de los agentes:
 
 *Por parámetro:
@@ -1941,6 +1942,15 @@ Los agenets podrán moverse siempre y cuando la velocidad de movimiento de su gr
 Si el agente contagiado se encuentra en tratamiento este tiene mayor posibilidad de sobrevivir a la enfermedad, además no cantaiga al resto y no puede desplazarse. La cantidad de agentes en tratamiento depende de la capacidad hospitalaria.
 
 Si el agente contagiado es un contagiado detectado y está dentro de la población infectada aislada el agente no se podrá desplazar y no podrá contagiar a otros. La cantidad de agentes en aislamiento efectivo depende del parametro "%isolated_detected" el cual representa el porcentaje de agentes detectados que pasarán a aislamiento efectivo.
+
+
+Código de Colores:
+
+Cada grupo etario posee un color característico el cual se puede ver tambien en los gráficos, aparte de esos colores tambien existen estados que alteran el color del agente:
+
+-Si esta contagiado y no es detectado su color cambia a rojo.
+-Si es un contagiado detectado (detectado con o sin aislamiento efectivo) su color cambia a violeta.
+-Si es un agente recuperado su color cambia a azul.
 
 
 ## HOW TO USE IT
