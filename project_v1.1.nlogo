@@ -145,9 +145,9 @@ to get-healthy
   set color blue
   set size 4
   set aware_of_infection? false
-  ;;set infection_detected? false
-  ;;set days_to_detect 0
-  ;;set effective_isolation? false
+  set infection_detected? false
+  set days_to_detect 0
+  set effective_isolation? false
   update-recovered-statistics age-group
 end
 
