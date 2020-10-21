@@ -33,19 +33,19 @@ globals [
 ]
 
 humans-own [
-  infected?  ;; Infectado?
+  infected?  ;; Contagiado?
   infection-length ;; Longitud de la infección
   aggravated_symptoms_day ;; Días de sintomas graves
   age-group  ;; Grupo de edad
   ontreatment? ;; En tratamiento?
-  gotinfection? ;; Tiene infección?
+  gotinfection? ;; Se contagió?
   contagion-chance ;; Posibilidad de contagio
   death-chance ;; Posibilidad de muerte
   ongoing-infection-hours ;; Horas de infección en curso
   symptoms_delay ;; Retraso de los sintomas
-  aware_of_infection? ;; Consciente de la infección? (la persona es conciente de estar infectada)
-  infectedby ;; Infectado por
-  infection_detected? ;; Infectado con infeccion detectada
+  aware_of_infection? ;; Consciente de estar contagiado?
+  infectedby ;; Contagiado por
+  infection_detected? ;; Contagiado con infeccion detectada
   days_to_detect ;; Días que pasan desde el dia 1 a que es detectado
   effective_isolation? ;; Contagiado con aislamiento efectivo
 ]
@@ -145,6 +145,9 @@ to get-healthy
   set color blue
   set size 4
   set aware_of_infection? false
+  ;;set infection_detected? false
+  ;;set days_to_detect 0
+  ;;set effective_isolation? false
   update-recovered-statistics age-group
 end
 
@@ -1863,7 +1866,7 @@ INPUTBOX
 1987
 405
 iterations
-0.0
+1.0
 1
 0
 Number
@@ -1901,7 +1904,44 @@ HORIZONTAL
 
 ## HOW IT WORKS
 
-(what rules the agents use to create the overall behavior of the model)
+Se comienza con una población inicial, donde cada agente pertenece a un grupo etario. Cada grupo etario puede desplazarse a cierta velocidad, utilizar o no mascarillas y respetar o no el distanciamiento social. Al inicio de cada simulación tambien se presenta una cantidad de agentes infectados los los cuales tienen la posibilidad de infectar al resto de agentes. 
+
+Cada agente presenta las siguientes características:
+
+  infected?  ;; Contagiado?
+  infection-length ;; Longitud de la infección
+  aggravated_symptoms_day ;; Días de sintomas graves
+  age-group  ;; Grupo de edad
+  ontreatment? ;; En tratamiento?
+  gotinfection? ;; Se contagió?
+  contagion-chance ;; Posibilidad de contagio
+  death-chance ;; Posibilidad de muerte
+  ongoing-infection-hours ;; Horas de infección en curso
+  symptoms_delay ;; Retraso de los sintomas
+  aware_of_infection? ;; Consciente de estar contagiado?
+  infectedby ;; Contagiado por
+  infection_detected? ;; Contagiado con infeccion detectada
+  days_to_detect ;; Días que pasan desde el dia 1 a que es detectado
+  effective_isolation? ;; Contagiado con aislamiento efectivo
+
+La capacidad de moverse del grupo etario, el uso de mascarilla y distanciamiento social, definen la probabilidad de ser contagiado por otro agente.
+
+Los días de sitomas graves, si recibe o no tratamiento y la tasa de mortalidad del grupo etario define si el paciente puede morir por la enfermedad.
+
+Los agentes contagiados, pueden ser detectados de forma aleatoria entre el día 1 al día 15 de su contagio, por lo que una vez detectado y dependiendo del parametro "%isolated_detected" puede asignarse una población infectada aislada la cual no podra moverse y contagiar al resto.
+
+Constantemente se realiza una revisión del estado de salud de la poblacion, donde se verifica la capacidad para tratar a los contagiados, la detección del contagio y su posibilidad de muerte por la enfermedad.
+
+Desplazamiento de los agentes:
+
+*Por parámetro:
+Los agenets podrán moverse siempre y cuando la velocidad de movimiento de su grupo etario se lo permita, si su velocidad es 0 se asume un aislamiento del agente, por lo cual su probabilidad de contagiarse es 0. 
+
+*Por caracteristicas del agente contagiado:
+Si el agente contagiado se encuentra en tratamiento este tiene mayor posibilidad de sobrevivir a la enfermedad, además no cantaiga al resto y no puede desplazarse. La cantidad de agentes en tratamiento depende de la capacidad hospitalaria.
+
+Si el agente contagiado es un contagiado detectado y está dentro de la población infectada aislada el agente no se podrá desplazar y no podrá contagiar a otros. La cantidad de agentes en aislamiento efectivo depende del parametro "%isolated_detected" el cual representa el porcentaje de agentes detectados que pasarán a aislamiento efectivo.
+
 
 ## HOW TO USE IT
 
