@@ -48,6 +48,7 @@ humans-own [
   infection_detected? ;; Contagiado con infeccion detectada
   days_to_detect ;; Días que pasan desde el dia 1 a que es detectado
   effective_isolation? ;; Contagiado con aislamiento efectivo
+  group ;; Grupo de cuarentena al que pertenece
 ]
 
 statistic_agents-own [
@@ -269,7 +270,7 @@ to setup_statistic_agent [ #age-group ]
   ]
 end
 
-to setup-people [#number #age-group]
+to setup-people [#number #age-group #group]
   create-humans #number [
       let random_x 0
       let random_y 0
@@ -289,6 +290,7 @@ to setup-people [#number #age-group]
       set infection_detected? false
       set days_to_detect 0
       set effective_isolation? false
+      set group #group
 
 
       ifelse age-group <= age_group_0_9 [
@@ -445,6 +447,37 @@ to setup-people [#number #age-group]
      ]
 end
 
+to group-divider[#number #age-group]
+  let total_group #number
+  let group1 0
+  let group2 0
+  let group3 0
+  if (remainder  total_group 3 = 0) [
+    set group1 total_group / 3
+    set group2 total_group / 3
+    set group3 total_group / 3
+    setup-people group1 #age-group 1
+    setup-people group2 #age-group 2
+    setup-people group3 #age-group 3
+  ]
+  if (remainder  total_group 3 = 1) [
+    set group1 floor (total_group / 3) + 1
+    set group2 floor (total_group / 3)
+    set group3 floor (total_group / 3)
+    setup-people group1 #age-group 1
+    setup-people group2 #age-group 2
+    setup-people group3 #age-group 3
+  ]
+  if (remainder  total_group 3 = 2) [
+    set group1 floor (total_group / 3) + 1
+    set group2 floor (total_group / 3) + 1
+    set group3 floor (total_group / 3)
+    setup-people group1 #age-group 1
+    setup-people group2 #age-group 2
+    setup-people group3 #age-group 3
+  ]
+end
+
 to setup
   clear-all
 
@@ -456,15 +489,17 @@ to setup
   ]
 
   setup-globals
-  setup-people population_0-9 age_group_0_9
-  setup-people population_10-19 age_group_10_19
-  setup-people population_20-29 age_group_20_29
-  setup-people population_30-39 age_group_30_39
-  setup-people population_40-49 age_group_40_49
-  setup-people population_50-59 age_group_50_59
-  setup-people population_60-69 age_group_60_69
-  setup-people population_70-79 age_group_70_79
-  setup-people population_80 age_group_80
+  group-divider population_0-9 age_group_0_9
+  group-divider population_0-9 age_group_0_9
+  group-divider population_10-19 age_group_10_19
+  group-divider population_20-29 age_group_20_29
+  group-divider population_30-39 age_group_30_39
+  group-divider population_40-49 age_group_40_49
+  group-divider population_50-59 age_group_50_59
+  group-divider population_60-69 age_group_60_69
+  group-divider population_70-79 age_group_70_79
+  group-divider population_80 age_group_80
+
   let affected_number round (count humans * (initial_infected_population / 100))
   infect_people affected_number
 
@@ -929,9 +964,9 @@ SLIDER
 population_0-9
 population_0-9
 0
-10000
+150
 100.0
-100
+1
 1
 NIL
 HORIZONTAL
@@ -944,9 +979,9 @@ SLIDER
 population_10-19
 population_10-19
 0
-10000
+150
 100.0
-100
+1
 1
 NIL
 HORIZONTAL
@@ -959,9 +994,9 @@ SLIDER
 population_20-29
 population_20-29
 0
-10000
+150
 100.0
-100
+1
 1
 NIL
 HORIZONTAL
@@ -974,9 +1009,9 @@ SLIDER
 population_30-39
 population_30-39
 0
-10000
+150
 100.0
-100
+1
 1
 NIL
 HORIZONTAL
@@ -989,9 +1024,9 @@ SLIDER
 population_40-49
 population_40-49
 0
-10000
+150
 100.0
-100
+1
 1
 NIL
 HORIZONTAL
@@ -1004,9 +1039,9 @@ SLIDER
 population_50-59
 population_50-59
 0
-10000
+150
 100.0
-100
+1
 1
 NIL
 HORIZONTAL
@@ -1019,9 +1054,9 @@ SLIDER
 population_60-69
 population_60-69
 0
-10000
+150
 100.0
-100
+1
 1
 NIL
 HORIZONTAL
@@ -1034,9 +1069,9 @@ SLIDER
 population_70-79
 population_70-79
 0
-10000
+150
 100.0
-100
+1
 1
 NIL
 HORIZONTAL
@@ -1049,9 +1084,9 @@ SLIDER
 population_80
 population_80
 0
-10000
+150
 100.0
-100
+1
 1
 NIL
 HORIZONTAL
