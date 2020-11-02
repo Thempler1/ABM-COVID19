@@ -29,6 +29,7 @@ globals [
   logged_transmitters   ;; Transmisores registrados
   R0_global   ;; Número de reproducción
   prioritise_elderly?   ;; Priorizar a los ancianos?
+  week  ;; Semana
   filename ;; Nombre del archivo CSV
 ]
 
@@ -49,6 +50,7 @@ humans-own [
   days_to_detect ;; Días que pasan desde el dia 1 a que es detectado
   effective_isolation? ;; Contagiado con aislamiento efectivo
   group ;; Grupo de cuarentena al que pertenece
+  can_move? ;; Si se puede mover segun su grupo
 ]
 
 statistic_agents-own [
@@ -83,7 +85,7 @@ end
 to infection_exposure
   if (not gotinfection?) [
     let people_around humans-on neighbors
-    let infected_around people_around with [infected? = true and not effective_isolation? and not ontreatment? and ( ongoing-infection-hours > (average_days_for_contagion * 24 )) ]
+    let infected_around people_around with [infected? = true and not effective_isolation? and not ontreatment? and can_move? and ( ongoing-infection-hours > (average_days_for_contagion * 24 )) ]
     let number_of_infected_around count infected_around
     if number_of_infected_around > 0 [
       let within_contagion_distance (random(metres_per_patch) + 1) ;; Asumiendo que cada patch representa los metros por patch.
@@ -219,7 +221,7 @@ to check_health_state
 end
 
 to move [ #speed ]
-  if (not ontreatment? and not effective_isolation?) [
+  if (can_move? and not ontreatment? and not effective_isolation?) [
     rt random-float 360
     fd #speed
   ]
@@ -259,6 +261,7 @@ to setup-globals
   set cumulative_aware_of_infection 0
   set last_cumulative_aware_of_infection 0
   set logged_transmitters[]
+  set week 0
 end
 
 to setup_statistic_agent [ #age-group ]
@@ -291,6 +294,7 @@ to setup-people [#number #age-group #group]
       set days_to_detect 0
       set effective_isolation? false
       set group #group
+      set can_move? false
 
 
       ifelse age-group <= age_group_0_9 [
@@ -503,6 +507,9 @@ to setup
   let affected_number round (count humans * (initial_infected_population / 100))
   infect_people affected_number
 
+  ask humans with [group = 1] [set can_move? true]
+  show "Comienza a moverse grupo 1"
+
   setup_statistic_agent age_group_0_9
   setup_statistic_agent age_group_10_19
   setup_statistic_agent age_group_20_29
@@ -689,6 +696,34 @@ to go
   [
       ask humans [ check_health_state ]
   ]
+
+  let temp_weeker week
+  set week floor (ticks / 168)
+
+  if (temp_weeker != week) [
+      ifelse (remainder week 3 = 0) [
+      show "Se mueve grupo 1"
+      ask humans with [group = 1] [set can_move? true]
+      ask humans with [group = 2] [set can_move? false]
+      ask humans with [group = 3] [set can_move? false]
+      ][
+      ifelse (remainder week 3 = 1) [
+        show "Se mueve grupo 2"
+        ask humans with [group = 1] [set can_move? false]
+        ask humans with [group = 2] [set can_move? true]
+        ask humans with [group = 3] [set can_move? false]
+      ][
+        show "Se mueve grupo 3"
+        ask humans with [group = 1] [set can_move? false]
+        ask humans with [group = 2] [set can_move? false]
+        ask humans with [group = 3] [set can_move? true]
+      ]
+    ]
+  ]
+
+
+
+
   ask humans [
 
         ifelse age-group <= 9 [
@@ -744,7 +779,7 @@ to go
         ]
       ]
 
-  ask humans [ infection_exposure ]
+  ask humans with [can_move?] [ infection_exposure ]
 
   ifelse elapsed-day-hours >= 24
   [
@@ -1173,7 +1208,7 @@ SWITCH
 272
 show_plot_3?
 show_plot_3?
-0
+1
 1
 -1000
 
@@ -1723,7 +1758,7 @@ INPUTBOX
 1987
 405
 iterations
-1.0
+0.0
 1
 0
 Number
@@ -1802,6 +1837,9 @@ Constantemente se realiza una revisión del estado de salud de la poblacion, don
 
 
 Desplazamiento de los agentes:
+
+*Cuarentena Intermitente
+La población total de agentes se encuentra dividida en tres grupos, donde cada grupo tiene la posibilidad de desplazarse durante una semana cada dos semanas, por lo que todas las semanas se mueve un grupo distinto.
 
 *Por parámetro:
 Los agenets podrán moverse siempre y cuando la velocidad de movimiento de su grupo etario se lo permita, si su velocidad es 0 se asume un aislamiento del agente, por lo cual su probabilidad de contagiarse es 0. 
