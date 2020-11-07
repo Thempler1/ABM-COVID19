@@ -16,33 +16,31 @@ globals [
   age_group_60_69   ;; Rango etario entre 60 y 69
   age_group_70_79   ;; Rango etario entre 70 y 79
   age_group_80      ;; Rango etario mayor a 80
-  elapsed-day-hours ;; Horas transcurridas
+  elapsed_day_hours ;; Horas transcurridas
   medical_care_used ;; Atención médica utilizada
   number_of_deaths  ;; Número de muertos
   death_list        ;; Lista de muertos
   city_area_patches   ;; Parches del área de la ciudad
-  ;roads_area_patches   ;; Parches de área de la parcela
   cumulative_infected   ;; Infectados acumulados
   last_cumulative   ;; Ultimo acumulado
   cumulative_aware_of_infection   ;; Conocimiento de infección acumulativo
   last_cumulative_aware_of_infection   ;; Última acumulación acumulativa de infección
   logged_transmitters   ;; Transmisores registrados
   R0_global   ;; Número de reproducción
-  prioritise_elderly?   ;; Priorizar a los ancianos?
   week  ;; Semana
   filename ;; Nombre del archivo CSV
 ]
 
 humans-own [
   infected?  ;; Contagiado?
-  infection-length ;; Longitud de la infección
+  infection_length ;; Longitud de la infección
   aggravated_symptoms_day ;; Días de sintomas graves
-  age-group  ;; Grupo de edad
-  ontreatment? ;; En tratamiento?
-  gotinfection? ;; Se contagió?
-  contagion-chance ;; Posibilidad de contagio
-  death-chance ;; Posibilidad de muerte
-  ongoing-infection-hours ;; Horas de infección en curso
+  age_group  ;; Grupo de edad
+  on_treatment? ;; En tratamiento?
+  got_infection? ;; Se contagió?
+  contagion_chance ;; Posibilidad de contagio
+  death_chance ;; Posibilidad de muerte
+  ongoing_infection_hours ;; Horas de infección en curso
   symptoms_delay ;; Retraso de los sintomas
   aware_of_infection? ;; Consciente de estar contagiado?
   infectedby ;; Contagiado por
@@ -54,7 +52,7 @@ humans-own [
 ]
 
 statistic_agents-own [
-  age-group  ;; Grupo etario
+  age_group  ;; Grupo etario
   recovered  ;; Recuperados
   deaths     ;; Muertos
 ]
@@ -80,46 +78,48 @@ to-report calculate_R0 ;; Calcular el número de reproducciones
   ]
 end
 
-;; Procedimientos de humanos
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Procedimientos de humanos ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 to infection_exposure
-  if (not gotinfection?) [
+  if (not got_infection?) [
     let people_around humans-on neighbors
-    let infected_around people_around with [infected? = true and not effective_isolation? and not ontreatment? and can_move? and ( ongoing-infection-hours > (average_days_for_contagion * 24 )) ]
+    let infected_around people_around with [infected? = true and not effective_isolation? and not on_treatment? and can_move? and ( ongoing_infection_hours > (average_days_for_contagion * 24 )) ]
     let number_of_infected_around count infected_around
     if number_of_infected_around > 0 [
       let within_contagion_distance (random(metres_per_patch) + 1) ;; Asumiendo que cada patch representa los metros por patch.
 
       ;; Filtrar la distancia social por rango etario
-      if age-group = 9 [
+      if age_group = 9 [
         set within_contagion_distance random-float within_contagion_distance + ( keep_social_distancing_0-9 )
-      ] if age-group = 19 [
+      ] if age_group = 19 [
         set within_contagion_distance random-float within_contagion_distance + ( keep_social_distancing_10-19 )
-      ] if age-group = 29 [
+      ] if age_group = 29 [
         set within_contagion_distance random-float within_contagion_distance + ( keep_social_distancing_20-29 )
-      ] if age-group = 39 [
+      ] if age_group = 39 [
         set within_contagion_distance random-float within_contagion_distance + ( keep_social_distancing_30-39 )
-      ] if age-group = 49 [
+      ] if age_group = 49 [
         set within_contagion_distance random-float within_contagion_distance + ( keep_social_distancing_40-49 )
-      ] if age-group = 59 [
+      ] if age_group = 59 [
         set within_contagion_distance random-float within_contagion_distance + ( keep_social_distancing_50-59 )
-      ] if age-group = 69 [
+      ] if age_group = 69 [
         set within_contagion_distance random-float within_contagion_distance + ( keep_social_distancing_60-69 )
-      ] ifelse age-group = 79 [
+      ] ifelse age_group = 79 [
         set within_contagion_distance random-float within_contagion_distance + ( keep_social_distancing_70-79 )
       ] [
         set within_contagion_distance random-float within_contagion_distance + ( keep_social_distancing_80 )
       ]
 
       ;; Posibilidad de contagio según grupo etario.
-      if (contagion-chance >= (random(100) + 1) and within_contagion_distance <= maximum_contagion_distance) [
+      if (contagion_chance >= (random(100) + 1) and within_contagion_distance <= maximum_contagion_distance) [
         let transmitter_person nobody
         ask one-of infected_around [ set transmitter_person who ]
         set logged_transmitters lput transmitter_person logged_transmitters
         if length ( logged_transmitters ) > 800 [ ;; No permita que la lista crezca sin fin, elimine los elementos más antiguos.
           set logged_transmitters but-first logged_transmitters
         ]
-       get_infected
+        get_infected
       ]
     ]
   ]
@@ -129,59 +129,59 @@ to get_infected
   set color red
   set size 4
   set infected? true
-  set gotinfection? true
-  set infection-length 24 * ( random-normal average_infection_length 5.0 ) ;; Media de la duración de la infección y la desviación estándar multiplicada por 24 horas
-  set aggravated_symptoms_day round (infection-length / 2.5) ;; La infección agravada puede ocurrir después de la primera semana.
-  set symptoms_delay 24 * ( random-normal average-symptoms-show 4.0)
-  set ongoing-infection-hours 0
+  set got_infection? true
+  set infection_length 24 * ( random-normal average_infection_length 5.0 ) ;; Media de la duración de la infección y la desviación estándar multiplicada por 24 horas
+  set aggravated_symptoms_day round (infection_length / 2.5) ;; La infección agravada puede ocurrir después de la primera semana.
+  set symptoms_delay 24 * ( random-normal average_symptoms_show 4.0)
+  set ongoing_infection_hours 0
   set cumulative_infected cumulative_infected + 1
   set days_to_detect (random(15) + 1)
 end
 
-to get-healthy
+to get_healthy
   set infected? false
-  set gotinfection? true
-  set infection-length 0
-  set ongoing-infection-hours 0
+  set got_infection? true
+  set infection_length 0
+  set ongoing_infection_hours 0
   set aggravated_symptoms_day 0
-  if ontreatment? [ free-medical-care set ontreatment? false ]
+  if on_treatment? [ free_medical_care set on_treatment? false ]
   set color blue
   set size 4
   set aware_of_infection? false
   set infection_detected? false
   set days_to_detect 0
   set effective_isolation? false
-  update-recovered-statistics age-group
+  update_recovered_statistics age_group
 end
 
 to check_health_state
   if infected? [
-    if ongoing-infection-hours >= symptoms_delay and not ontreatment? [
+    if ongoing_infection_hours >= symptoms_delay and not on_treatment? [
       if not aware_of_infection? [
         set aware_of_infection? true
         set cumulative_aware_of_infection cumulative_aware_of_infection + 1
       ]
       ifelse prioritise_elderly? [
-        ifelse age-group >= age_group_60_69 [
-          if get-medical-care = true [
-            set ontreatment? true
+        ifelse age_group >= age_group_60_69 [
+          if get_medical_care = true [
+            set on_treatment? true
           ]
         ]
         [
           if %medical-care-availability >= 25 [ ;; Si no es una persona mayor, solo reciba atención médica si la disponibilidad es> = 25%
-            if get-medical-care = true [
-              set ontreatment? true
+            if get_medical_care = true [
+              set on_treatment? true
             ]
           ]
         ]
       ]
       [
-        if get-medical-care = true [
-          set ontreatment? true
+        if get_medical_care = true [
+          set on_treatment? true
         ]
       ]
     ]
-    if (ongoing-infection-hours / 24 = days_to_detect) [
+    if (ongoing_infection_hours / 24 = days_to_detect) [
       set infection_detected? true
       set color violet
       let infected_count count humans with [infected?]
@@ -193,52 +193,53 @@ to check_health_state
         ;show isolated_count
       ]
     ]
-    if (ongoing-infection-hours = aggravated_symptoms_day) [;; Verifica si el paciente va a morir
+    if (ongoing_infection_hours = aggravated_symptoms_day) [;; Verifica si el paciente va a morir
       let chance_to_die 0
       let severity_factor 1
-      ifelse (ontreatment?) [
-        set chance_to_die ((death-chance * 1000) * severity_factor) * 0.5 ;; La probabilidad de muerte se reduce al 50%, la probabilidad de supervivencia aumenta en un 50%
+      ifelse (on_treatment?) [
+        set chance_to_die ((death_chance * 1000) * severity_factor) * 0.5 ;; La probabilidad de muerte se reduce al 50%, la probabilidad de supervivencia aumenta en un 50%
       ]
       [
-        set chance_to_die (death-chance * 1000) * severity_factor
+        set chance_to_die (death_chance * 1000) * severity_factor
       ]
-
       if (chance_to_die >= (random(100000) + 1)) [
-        update-death-statistics age-group
+        update-death-statistics age_group
         set number_of_deaths number_of_deaths + 1
-        delete-person
+        delete_person
       ]
     ]
 
-    ifelse (ongoing-infection-hours >= infection-length) [
-      set ongoing-infection-hours 0
-      get-healthy
+    ifelse (ongoing_infection_hours >= infection_length) [
+      set ongoing_infection_hours 0
+      get_healthy
     ]
     [
-      set ongoing-infection-hours ongoing-infection-hours + 1
+      set ongoing_infection_hours ongoing_infection_hours + 1
     ]
   ]
 end
 
 to move [ #speed ]
-  if (can_move? and not ontreatment? and not effective_isolation?) [
+  if (can_move? and not on_treatment? and not effective_isolation?) [
     rt random-float 360
     fd #speed
   ]
 end
 
-to delete-person
-  if ontreatment? [ free-medical-care ]
+to delete_person
+  if on_treatment? [ free_medical_care ]
   die
 end
 
-;; Setup
+;;;;;;;;;;;;;;
+;; Preparar ;;
+;;;;;;;;;;;;;;
 
 to create_city_map
   ask patches with [pxcor > -100 and pxcor < 100 and pycor > -100 and pycor < 100 ] [ set pcolor white ]
 end
 
-to setup-globals
+to setup_globals
 
   create_city_map
   ask patches [ set original_map_color pcolor ]
@@ -251,29 +252,28 @@ to setup-globals
   set age_group_60_69 69
   set age_group_70_79 79
   set age_group_80  80
-  set elapsed-day-hours 0
+  set elapsed_day_hours 0
   set medical_care_used 0
   set number_of_deaths 0
   set cumulative_infected 0
   set last_cumulative 0
   set city_area_patches patches with [ pcolor != black ]
-  set prioritise_elderly? false
   set cumulative_aware_of_infection 0
   set last_cumulative_aware_of_infection 0
   set logged_transmitters[]
   set week 0
 end
 
-to setup_statistic_agent [ #age-group ]
+to setup_statistic_agent [ #age_group ]
   create-statistic_agents 1 [
-    set age-group #age-group
+    set age_group #age_group
     set recovered 0
     set deaths 0
     ht
   ]
 end
 
-to setup-people [#number #age-group #group]
+to setup-people [#number #age_group #group]
   create-humans #number [
       let random_x 0
       let random_y 0
@@ -282,10 +282,10 @@ to setup-people [#number #age-group #group]
       set shape "person"
       set infected? false
       set aggravated_symptoms_day 0
-      set ongoing-infection-hours 0
-      set age-group #age-group
-      set ontreatment? false
-      set gotinfection? false
+      set ongoing_infection_hours 0
+      set age_group #age_group
+      set on_treatment? false
+      set got_infection? false
       set symptoms_delay 0
       set aware_of_infection? false
       set infectedby nobody
@@ -297,147 +297,146 @@ to setup-people [#number #age-group #group]
       set can_move? false
 
 
-      ifelse age-group <= age_group_0_9 [
+      ifelse age_group <= age_group_0_9 [
        ifelse (move_0-9 > 0) [
         ifelse (use_mask_0-9) [
-          set contagion-chance 3.0
+          set contagion_chance 3.0
         ]
         [
-          set contagion-chance 17.0
+          set contagion_chance 17.0
         ]
        ]
        [
-        set contagion-chance 0.0
+        set contagion_chance 0.0
        ]
-        set death-chance 0.0
+        set death_chance 0.0
         set color black
       ]
       [
-        ifelse age-group <= age_group_10_19 [
+        ifelse age_group <= age_group_10_19 [
           ifelse (move_10-19 > 0) [
            ifelse (use_mask_10-19) [
-            set contagion-chance 3.0
+            set contagion_chance 3.0
            ]
            [
-            set contagion-chance 17.0
+            set contagion_chance 17.0
            ]
           ]
           [
-           set contagion-chance 0.0
+           set contagion_chance 0.0
           ]
-          set death-chance 0.0
+          set death_chance 0.0
           set color gray
         ]
         [
-          ifelse age-group <= age_group_20_29 [
+          ifelse age_group <= age_group_20_29 [
            ifelse (move_20-29 > 0) [
             ifelse (use_mask_20-29) [
-             set contagion-chance 3.0
+             set contagion_chance 3.0
             ]
             [
-             set contagion-chance 17.0
+             set contagion_chance 17.0
             ]
            ]
            [
-            set contagion-chance 0.0
+            set contagion_chance 0.0
            ]
-            set death-chance 0.0
+            set death_chance 0.0
             set color pink
           ]
           [
-            ifelse age-group <= age_group_30_39 [
+            ifelse age_group <= age_group_30_39 [
              ifelse (move_30-39 > 0) [
               ifelse (use_mask_30-39) [
-                set contagion-chance 3.0
+                set contagion_chance 3.0
               ]
               [
-                set contagion-chance 17.0
+                set contagion_chance 17.0
               ]
             ]
             [
-              set contagion-chance 0.0
+              set contagion_chance 0.0
             ]
-              set death-chance 0.3
+              set death_chance 0.3
               set color orange
             ]
             [
-              ifelse age-group <= age_group_40_49 [
+              ifelse age_group <= age_group_40_49 [
                ifelse (move_40-49 > 0) [
                 ifelse (use_mask_40-49) [
-                  set contagion-chance 3.0
+                  set contagion_chance 3.0
                 ]
                 [
-                  set contagion-chance 17.0
+                  set contagion_chance 17.0
                 ]
               ]
               [
-                set contagion-chance 0.0
+                set contagion_chance 0.0
               ]
-                set death-chance 0.4
+                set death_chance 0.4
                 set color brown
               ]
               [
-                ifelse age-group <= age_group_50_59 [
+                ifelse age_group <= age_group_50_59 [
                   ifelse (move_50-59 > 0) [
                    ifelse (use_mask_50-59) [
-                    set contagion-chance 3.0
+                    set contagion_chance 3.0
                   ]
                   [
-                    set contagion-chance 17.0
+                    set contagion_chance 17.0
                   ]
                 ]
                 [
-                  set contagion-chance 0.0
+                  set contagion_chance 0.0
                 ]
-                  set death-chance 1.0
+                  set death_chance 1.0
                   set color yellow
                 ]
                 [
-                  ifelse age-group <= age_group_60_69 [
+                  ifelse age_group <= age_group_60_69 [
                    ifelse (move_60-69 > 0) [
                     ifelse (use_mask_60-69) [
-                      set contagion-chance 3.0
+                      set contagion_chance 3.0
                     ]
                     [
-                      set contagion-chance 17.0
+                      set contagion_chance 17.0
                     ]
                   ]
                   [
-                    set contagion-chance 0.0
+                    set contagion_chance 0.0
                   ]
-                    set death-chance 3.5
+                    set death_chance 3.5
                     set color green
                   ]
                   [
-                    ifelse age-group <= age_group_70_79 [
+                    ifelse age_group <= age_group_70_79 [
                      ifelse (move_70-79 > 0) [
                       ifelse (use_mask_70-79) [
-                        set contagion-chance 3.0
+                        set contagion_chance 3.0
                       ]
                       [
-                        set contagion-chance 17.0
+                        set contagion_chance 17.0
                       ]
                     ]
                     [
-                      set contagion-chance 0.0
+                      set contagion_chance 0.0
                     ]
-                      set death-chance 12.8
+                      set death_chance 12.8
                       set color lime
                     ]
                     [
                         ifelse (move_80 > 0) [
                          ifelse (use_mask_80) [
-
-                          set contagion-chance 3.0
+                          set contagion_chance 3.0
                          ]
                          [
-                          set contagion-chance 17.0
+                          set contagion_chance 17.0
                          ]
                         ]
                         [
-                         set contagion-chance 0.0
+                         set contagion_chance 0.0
                         ]
-                        set death-chance 20.2
+                        set death_chance 20.2
                         set color turquoise
                     ]
                   ]
@@ -451,34 +450,38 @@ to setup-people [#number #age-group #group]
      ]
 end
 
-to group-divider[#number #age-group]
+to group-divider[#number #age_group]
   let total_group #number
-  let group1 0
-  let group2 0
-  let group3 0
-  if (remainder  total_group 3 = 0) [
-    set group1 total_group / 3
-    set group2 total_group / 3
-    set group3 total_group / 3
-    setup-people group1 #age-group 1
-    setup-people group2 #age-group 2
-    setup-people group3 #age-group 3
-  ]
-  if (remainder  total_group 3 = 1) [
-    set group1 floor (total_group / 3) + 1
-    set group2 floor (total_group / 3)
-    set group3 floor (total_group / 3)
-    setup-people group1 #age-group 1
-    setup-people group2 #age-group 2
-    setup-people group3 #age-group 3
-  ]
-  if (remainder  total_group 3 = 2) [
-    set group1 floor (total_group / 3) + 1
-    set group2 floor (total_group / 3) + 1
-    set group3 floor (total_group / 3)
-    setup-people group1 #age-group 1
-    setup-people group2 #age-group 2
-    setup-people group3 #age-group 3
+  ifelse (intermittent_quarantine?) [
+    let group1 0
+    let group2 0
+    let group3 0
+    if (remainder  total_group 3 = 0) [
+      set group1 total_group / 3
+      set group2 total_group / 3
+      set group3 total_group / 3
+      setup-people group1 #age_group 1
+      setup-people group2 #age_group 2
+      setup-people group3 #age_group 3
+    ]
+    if (remainder  total_group 3 = 1) [
+      set group1 floor (total_group / 3) + 1
+      set group2 floor (total_group / 3)
+      set group3 floor (total_group / 3)
+      setup-people group1 #age_group 1
+      setup-people group2 #age_group 2
+      setup-people group3 #age_group 3
+    ]
+    if (remainder  total_group 3 = 2) [
+      set group1 floor (total_group / 3) + 1
+      set group2 floor (total_group / 3) + 1
+      set group3 floor (total_group / 3)
+      setup-people group1 #age_group 1
+      setup-people group2 #age_group 2
+      setup-people group3 #age_group 3
+    ]
+  ][
+    setup-people total_group #age_group 1
   ]
 end
 
@@ -492,8 +495,7 @@ to setup
     start-output-file
   ]
 
-  setup-globals
-  group-divider population_0-9 age_group_0_9
+  setup_globals
   group-divider population_0-9 age_group_0_9
   group-divider population_10-19 age_group_10_19
   group-divider population_20-29 age_group_20_29
@@ -508,7 +510,16 @@ to setup
   infect_people affected_number
 
   ask humans with [group = 1] [set can_move? true]
-  show "Comienza a moverse grupo 1"
+  ifelse (intermittent_quarantine?) [
+    show "######################################"
+    show "Simulación con cuarentena intermitente"
+    show "######################################"
+    show "Comenzará a moverse grupo 1"
+  ][
+    show "##########################"
+    show "Simulación sin cuarentena"
+    show "##########################"
+  ]
 
   setup_statistic_agent age_group_0_9
   setup_statistic_agent age_group_10_19
@@ -559,29 +570,32 @@ to start-output-file
    file-print ""
 end
 
-; Environment - Statistic_agents procedures
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Ambiente - Statistic_agents procedures ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-to update-recovered-statistics [ #age-group ]
+to update_recovered_statistics [ #age_group ]
 
-  ask statistic_agents with [ age-group = #age-group ] [ set recovered recovered + 1 ]
-
-end
-
-to update-death-statistics [ #age-group ]
-
-  ask statistic_agents with [ age-group = #age-group ] [ set deaths deaths + 1 ]
+  ask statistic_agents with [ age_group = #age_group ] [ set recovered recovered + 1 ]
 
 end
 
-; Environment - Human Procedures
+to update-death-statistics [ #age_group ]
 
+  ask statistic_agents with [ age_group = #age_group ] [ set deaths deaths + 1 ]
+
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Ambiente - Human Procedures ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 to infect_people [#affected_number]
-  ask n-of #affected_number humans with [ not gotinfection? ] [ get_infected ]
+  ask n-of #affected_number humans with [ not got_infection? ] [ get_infected ]
 end
 
 
-to-report get-medical-care
+to-report get_medical_care
   if medical_care_used < medical_care_capacity [
     set medical_care_used medical_care_used + 1
     report true
@@ -593,54 +607,64 @@ to-report %medical-care-availability
   report ( (medical_care_capacity - medical_care_used) / medical_care_capacity ) * 100
 end
 
-to free-medical-care
+to free_medical_care
   set medical_care_used medical_care_used - 1
 end
 
+;;;;;;;;;;;;;;;;;;;
+;; Go procedures ;;
+;;;;;;;;;;;;;;;;;;;
 
-; Go procedures
 to go
+  ifelse (intermittent_quarantine?) [
+    go_quarantine
+  ][
+    go_normal
+  ]
+end
+
+to go_normal
 
   if iterations = 0 [
     stop
   ]
 
   if (count humans with [infected?] = 0) [
-    ; Variables temporales relacionadas a las muertes
-    let deaths_0-9 [deaths] of one-of statistic_agents with [age-group = age_group_0_9]
-    let deaths_10-19 [deaths] of one-of statistic_agents with [age-group = age_group_10_19]
-    let deaths_20-29 [deaths] of one-of statistic_agents with [age-group = age_group_20_29]
-    let deaths_30-39 [deaths] of one-of statistic_agents with [age-group = age_group_30_39]
-    let deaths_40-49 [deaths] of one-of statistic_agents with [age-group = age_group_40_49]
-    let deaths_50-59 [deaths] of one-of statistic_agents with [age-group = age_group_50_59]
-    let deaths_60-69 [deaths] of one-of statistic_agents with [age-group = age_group_60_69]
-    let deaths_70-79 [deaths] of one-of statistic_agents with [age-group = age_group_70_79]
-    let deaths_80 [deaths] of one-of statistic_agents with [age-group = age_group_80]
+    ;; Variables temporales relacionadas a las muertes
+    let deaths_0-9 [deaths] of one-of statistic_agents with [age_group = age_group_0_9]
+    let deaths_10-19 [deaths] of one-of statistic_agents with [age_group = age_group_10_19]
+    let deaths_20-29 [deaths] of one-of statistic_agents with [age_group = age_group_20_29]
+    let deaths_30-39 [deaths] of one-of statistic_agents with [age_group = age_group_30_39]
+    let deaths_40-49 [deaths] of one-of statistic_agents with [age_group = age_group_40_49]
+    let deaths_50-59 [deaths] of one-of statistic_agents with [age_group = age_group_50_59]
+    let deaths_60-69 [deaths] of one-of statistic_agents with [age_group = age_group_60_69]
+    let deaths_70-79 [deaths] of one-of statistic_agents with [age_group = age_group_70_79]
+    let deaths_80 [deaths] of one-of statistic_agents with [age_group = age_group_80]
     let totalDeaths number_of_deaths
 
-    ; Variables temporales relacionadas a los infectados
-    let infecteds_0-9 count humans with [age-group = age_group_0_9 and gotinfection?]
-    let infecteds_10-19 count humans with [age-group = age_group_10_19 and gotinfection?]
-    let infecteds_20-29 count humans with [age-group = age_group_20_29 and gotinfection?]
-    let infecteds_30-39 count humans with [age-group = age_group_30_39 and gotinfection?]
-    let infecteds_40-49 count humans with [age-group = age_group_40_49 and gotinfection?]
-    let infecteds_50-59 count humans with [age-group = age_group_50_59 and gotinfection?]
-    let infecteds_60-69 count humans with [age-group = age_group_60_69 and gotinfection?]
-    let infecteds_70-79 count humans with [age-group = age_group_70_79 and gotinfection?]
-    let infecteds_80 count humans with [age-group = age_group_80 and gotinfection?]
-    let totalInfecteds count humans with [not infected? and gotinfection?]
+    ;; Variables temporales relacionadas a los infectados
+    let infecteds_0-9 count humans with [age_group = age_group_0_9 and got_infection?]
+    let infecteds_10-19 count humans with [age_group = age_group_10_19 and got_infection?]
+    let infecteds_20-29 count humans with [age_group = age_group_20_29 and got_infection?]
+    let infecteds_30-39 count humans with [age_group = age_group_30_39 and got_infection?]
+    let infecteds_40-49 count humans with [age_group = age_group_40_49 and got_infection?]
+    let infecteds_50-59 count humans with [age_group = age_group_50_59 and got_infection?]
+    let infecteds_60-69 count humans with [age_group = age_group_60_69 and got_infection?]
+    let infecteds_70-79 count humans with [age_group = age_group_70_79 and got_infection?]
+    let infecteds_80 count humans with [age_group = age_group_80 and got_infection?]
+    let totalInfecteds count humans with [not infected? and got_infection?]
 
-    ; Variables relacionadas a las personas infectadas sin tratamiento
-    let notTreatment_0-9 count humans with [age-group = age_group_0_9 and not ontreatment?]
-    let notTreatment_10-19 count humans with [age-group = age_group_10_19 and not ontreatment?]
-    let notTreatment_20-29 count humans with [age-group = age_group_20_29 and not ontreatment?]
-    let notTreatment_30-39 count humans with [age-group = age_group_30_39 and not ontreatment?]
-    let notTreatment_40-49 count humans with [age-group = age_group_40_49 and not ontreatment?]
-    let notTreatment_50-59 count humans with [age-group = age_group_50_59 and not ontreatment?]
-    let notTreatment_60-69 count humans with [age-group = age_group_60_69 and not ontreatment?]
-    let notTreatment_70-79 count humans with [age-group = age_group_70_79 and not ontreatment?]
-    let notTreatment_80 count humans with [age-group = age_group_80 and not ontreatment?]
-    let totalNotTreatments count humans with [not ontreatment?]
+    ;; Variables relacionadas a las personas infectadas sin tratamiento
+    let notTreatment_0-9 count humans with [age_group = age_group_0_9 and not on_treatment?]
+    let notTreatment_10-19 count humans with [age_group = age_group_10_19 and not on_treatment?]
+    let notTreatment_20-29 count humans with [age_group = age_group_20_29 and not on_treatment?]
+    let notTreatment_30-39 count humans with [age_group = age_group_30_39 and not on_treatment?]
+    let notTreatment_40-49 count humans with [age_group = age_group_40_49 and not on_treatment?]
+    let notTreatment_50-59 count humans with [age_group = age_group_50_59 and not on_treatment?]
+    let notTreatment_60-69 count humans with [age_group = age_group_60_69 and not on_treatment?]
+    let notTreatment_70-79 count humans with [age_group = age_group_70_79 and not on_treatment?]
+    let notTreatment_80 count humans with [age_group = age_group_80 and not on_treatment?]
+    let totalNotTreatments count humans with [not on_treatment?]
 
     let days ceiling (ticks / 24)
 
@@ -686,11 +710,181 @@ to go
     file-close
 
     set iterations iterations - 1
-    go
+    go_normal
   ]
 
   ifelse prioritise_elderly? [
-    foreach sort-on [(- age-group)] humans
+    foreach sort-on [(- age_group)] humans
+    [ patient -> ask patient [ check_health_state ] ]
+  ]
+  [
+      ask humans [ check_health_state ]
+  ]
+  ask humans [
+
+        ifelse age_group <= 9 [
+         let mage_group_0-9 humans with [age_group = 9]
+         ask one-of mage_group_0-9 [ move move_0-9 ]
+        ]
+        [
+          ifelse age_group <= 19 [
+           let mage_group_10-19 humans with [age_group = 19]
+           ask one-of mage_group_10-19 [ move move_10-19 ]
+          ]
+          [
+            ifelse age_group <= 29 [
+              let mage_group_20-29 humans with [age_group = 29]
+              ask one-of mage_group_20-29 [ move move_20-29 ]
+            ]
+            [
+              ifelse age_group <= 39 [
+                let mage_group_30-39 humans with [age_group = 39]
+                ask one-of mage_group_30-39 [ move move_30-39 ]
+              ]
+              [
+                ifelse age_group <= 49 [
+                  let mage_group_40-49 humans with [age_group = 49]
+                  ask one-of mage_group_40-49 [ move move_40-49 ]
+                ]
+                [
+                  ifelse age_group <= 59 [
+                    let mage_group_50-59 humans with [age_group = 59]
+                    ask one-of mage_group_50-59 [ move move_50-59 ]
+                  ]
+                  [
+                    ifelse age_group <= 69 [
+                      let mage_group_60-69 humans with [age_group = 69]
+                      ask one-of mage_group_60-69 [ move move_60-69 ]
+                    ]
+                    [
+                    ifelse age_group <= 79 [
+                      let mage_group_70-79 humans with [age_group = 79]
+                      ask one-of mage_group_70-79 [ move move_70-79 ]
+                    ]
+                    [
+                      let mage_group_80 humans with [age_group = 80 ]
+                      ask one-of mage_group_80 [ move move_80 ]
+                    ]
+                    ]
+                  ]
+                ]
+              ]
+            ]
+          ]
+
+        ]
+      ]
+
+  ask humans [ infection_exposure ]
+
+  ifelse elapsed_day_hours >= 24
+  [
+    if log_infection_data? [
+      let delta_cumulative cumulative_aware_of_infection / (last_cumulative_aware_of_infection + 1)
+      set last_cumulative_aware_of_infection cumulative_aware_of_infection
+      set last_cumulative cumulative_infected
+    ]
+    set elapsed_day_hours 1
+  ]
+  [
+    set elapsed_day_hours elapsed_day_hours + 1
+  ]
+
+  tick
+end
+
+to go_quarantine
+
+  if iterations = 0 [
+    stop
+  ]
+
+  if (count humans with [infected?] = 0) [
+    ;; Variables temporales relacionadas a las muertes
+    let deaths_0-9 [deaths] of one-of statistic_agents with [age_group = age_group_0_9]
+    let deaths_10-19 [deaths] of one-of statistic_agents with [age_group = age_group_10_19]
+    let deaths_20-29 [deaths] of one-of statistic_agents with [age_group = age_group_20_29]
+    let deaths_30-39 [deaths] of one-of statistic_agents with [age_group = age_group_30_39]
+    let deaths_40-49 [deaths] of one-of statistic_agents with [age_group = age_group_40_49]
+    let deaths_50-59 [deaths] of one-of statistic_agents with [age_group = age_group_50_59]
+    let deaths_60-69 [deaths] of one-of statistic_agents with [age_group = age_group_60_69]
+    let deaths_70-79 [deaths] of one-of statistic_agents with [age_group = age_group_70_79]
+    let deaths_80 [deaths] of one-of statistic_agents with [age_group = age_group_80]
+    let totalDeaths number_of_deaths
+
+    ;; Variables temporales relacionadas a los infectados
+    let infecteds_0-9 count humans with [age_group = age_group_0_9 and got_infection?]
+    let infecteds_10-19 count humans with [age_group = age_group_10_19 and got_infection?]
+    let infecteds_20-29 count humans with [age_group = age_group_20_29 and got_infection?]
+    let infecteds_30-39 count humans with [age_group = age_group_30_39 and got_infection?]
+    let infecteds_40-49 count humans with [age_group = age_group_40_49 and got_infection?]
+    let infecteds_50-59 count humans with [age_group = age_group_50_59 and got_infection?]
+    let infecteds_60-69 count humans with [age_group = age_group_60_69 and got_infection?]
+    let infecteds_70-79 count humans with [age_group = age_group_70_79 and got_infection?]
+    let infecteds_80 count humans with [age_group = age_group_80 and got_infection?]
+    let totalInfecteds count humans with [not infected? and got_infection?]
+
+    ;; Variables relacionadas a las personas infectadas sin tratamiento
+    let notTreatment_0-9 count humans with [age_group = age_group_0_9 and not on_treatment?]
+    let notTreatment_10-19 count humans with [age_group = age_group_10_19 and not on_treatment?]
+    let notTreatment_20-29 count humans with [age_group = age_group_20_29 and not on_treatment?]
+    let notTreatment_30-39 count humans with [age_group = age_group_30_39 and not on_treatment?]
+    let notTreatment_40-49 count humans with [age_group = age_group_40_49 and not on_treatment?]
+    let notTreatment_50-59 count humans with [age_group = age_group_50_59 and not on_treatment?]
+    let notTreatment_60-69 count humans with [age_group = age_group_60_69 and not on_treatment?]
+    let notTreatment_70-79 count humans with [age_group = age_group_70_79 and not on_treatment?]
+    let notTreatment_80 count humans with [age_group = age_group_80 and not on_treatment?]
+    let totalNotTreatments count humans with [not on_treatment?]
+
+    let days ceiling (ticks / 24)
+
+    file-open filename
+
+    file-type (word days ", ")
+
+    file-type (word deaths_0-9 ", ")
+    file-type (word deaths_10-19 ", ")
+    file-type (word deaths_20-29 ", ")
+    file-type (word deaths_30-39 ", ")
+    file-type (word deaths_40-49 ", ")
+    file-type (word deaths_50-59 ", ")
+    file-type (word deaths_60-69 ", ")
+    file-type (word deaths_70-79 ", ")
+    file-type (word deaths_80 ", ")
+    file-type (word totalDeaths ", ")
+
+    file-type (word infecteds_0-9 ", ")
+    file-type (word infecteds_10-19 ", ")
+    file-type (word infecteds_20-29 ", ")
+    file-type (word infecteds_30-39 ", ")
+    file-type (word infecteds_40-49 ", ")
+    file-type (word infecteds_50-59 ", ")
+    file-type (word infecteds_60-69 ", ")
+    file-type (word infecteds_70-79 ", ")
+    file-type (word infecteds_80 ", ")
+    file-type (word totalInfecteds ", ")
+
+    file-type (word notTreatment_0-9 ", ")
+    file-type (word notTreatment_10-19 ", ")
+    file-type (word notTreatment_20-29 ", ")
+    file-type (word notTreatment_30-39 ", ")
+    file-type (word notTreatment_40-49 ", ")
+    file-type (word notTreatment_50-59 ", ")
+    file-type (word notTreatment_60-69 ", ")
+    file-type (word notTreatment_70-79 ", ")
+    file-type (word notTreatment_80 ", ")
+    file-type (word totalNotTreatments ", ")
+
+    file-print ""
+
+    file-close
+
+    set iterations iterations - 1
+    go_quarantine
+  ]
+
+  ifelse prioritise_elderly? [
+    foreach sort-on [(- age_group)] humans
     [ patient -> ask patient [ check_health_state ] ]
   ]
   [
@@ -721,52 +915,49 @@ to go
     ]
   ]
 
-
-
-
   ask humans [
 
-        ifelse age-group <= 9 [
-         let mage_group_0-9 humans with [age-group = 9]
+        ifelse age_group <= 9 [
+         let mage_group_0-9 humans with [age_group = 9]
          ask one-of mage_group_0-9 [ move move_0-9 ]
         ]
         [
-          ifelse age-group <= 19 [
-           let mage_group_10-19 humans with [age-group = 19]
+          ifelse age_group <= 19 [
+           let mage_group_10-19 humans with [age_group = 19]
            ask one-of mage_group_10-19 [ move move_10-19 ]
           ]
           [
-            ifelse age-group <= 29 [
-              let mage_group_20-29 humans with [age-group = 29]
+            ifelse age_group <= 29 [
+              let mage_group_20-29 humans with [age_group = 29]
               ask one-of mage_group_20-29 [ move move_20-29 ]
             ]
             [
-              ifelse age-group <= 39 [
-                let mage_group_30-39 humans with [age-group = 39]
+              ifelse age_group <= 39 [
+                let mage_group_30-39 humans with [age_group = 39]
                 ask one-of mage_group_30-39 [ move move_30-39 ]
               ]
               [
-                ifelse age-group <= 49 [
-                  let mage_group_40-49 humans with [age-group = 49]
+                ifelse age_group <= 49 [
+                  let mage_group_40-49 humans with [age_group = 49]
                   ask one-of mage_group_40-49 [ move move_40-49 ]
                 ]
                 [
-                  ifelse age-group <= 59 [
-                    let mage_group_50-59 humans with [age-group = 59]
+                  ifelse age_group <= 59 [
+                    let mage_group_50-59 humans with [age_group = 59]
                     ask one-of mage_group_50-59 [ move move_50-59 ]
                   ]
                   [
-                    ifelse age-group <= 69 [
-                      let mage_group_60-69 humans with [age-group = 69]
+                    ifelse age_group <= 69 [
+                      let mage_group_60-69 humans with [age_group = 69]
                       ask one-of mage_group_60-69 [ move move_60-69 ]
                     ]
                     [
-                    ifelse age-group <= 79 [
-                      let mage_group_70-79 humans with [age-group = 79]
+                    ifelse age_group <= 79 [
+                      let mage_group_70-79 humans with [age_group = 79]
                       ask one-of mage_group_70-79 [ move move_70-79 ]
                     ]
                     [
-                      let mage_group_80 humans with [age-group = 80 ]
+                      let mage_group_80 humans with [age_group = 80 ]
                       ask one-of mage_group_80 [ move move_80 ]
                     ]
                     ]
@@ -781,22 +972,21 @@ to go
 
   ask humans with [can_move?] [ infection_exposure ]
 
-  ifelse elapsed-day-hours >= 24
+  ifelse elapsed_day_hours >= 24
   [
     if log_infection_data? [
       let delta_cumulative cumulative_aware_of_infection / (last_cumulative_aware_of_infection + 1)
       set last_cumulative_aware_of_infection cumulative_aware_of_infection
       set last_cumulative cumulative_infected
     ]
-    set elapsed-day-hours 1
+    set elapsed_day_hours 1
   ]
   [
-    set elapsed-day-hours elapsed-day-hours + 1
+    set elapsed_day_hours elapsed_day_hours + 1
   ]
 
   tick
 end
-
 
 to-report %infected
   ifelse any? humans
@@ -847,14 +1037,14 @@ Days
 HORIZONTAL
 
 SLIDER
-972
-378
-1229
-411
+974
+414
+1231
+447
 metres_per_patch
 metres_per_patch
 1
-40
+5
 1.0
 1
 1
@@ -931,8 +1121,8 @@ SLIDER
 211
 1232
 244
-average-symptoms-show
-average-symptoms-show
+average_symptoms_show
+average_symptoms_show
 4
 15
 15.0
@@ -1134,9 +1324,9 @@ SLIDER
 initial_infected_population
 initial_infected_population
 0
-1
+100
 1.0
-0.01
+1
 1
 %
 HORIZONTAL
@@ -1146,7 +1336,7 @@ BUTTON
 29
 1532
 69
-Reiniciar
+Preparar
 setup
 NIL
 1
@@ -1163,7 +1353,7 @@ BUTTON
 27
 1806
 70
-Comenzar
+Comenzar / Pausar
 go
 T
 1
@@ -1191,15 +1381,15 @@ true
 true
 "" "if not show_plot_3? [stop]"
 PENS
-"0-9" 0.04 0 -16777216 true "" "plot [deaths] of one-of statistic_agents with [age-group = age_group_0_9]"
-"10-19" 0.04 0 -7500403 true "" "plot [deaths] of one-of statistic_agents with [age-group = age_group_10_19]"
-"20-29" 0.04 0 -2064490 true "" "plot [deaths] of one-of statistic_agents with [age-group = age_group_20_29]"
-"30-39" 0.04 0 -955883 true "" "plot [deaths] of one-of statistic_agents with [age-group = age_group_30_39]"
-"40-49" 0.04 0 -6459832 true "" "plot [deaths] of one-of statistic_agents with [age-group = age_group_40_49]"
-"50-59" 0.04 0 -1184463 true "" "plot [deaths] of one-of statistic_agents with [age-group = age_group_50_59]"
-"60-69" 0.04 0 -10899396 true "" "plot [deaths] of one-of statistic_agents with [age-group = age_group_60_69]"
-"70-79" 0.04 0 -13840069 true "" "plot [deaths] of one-of statistic_agents with [age-group = age_group_70_79]"
-">=80" 0.04 0 -14835848 true "" "plot [deaths] of one-of statistic_agents with [age-group = age_group_80]"
+"0-9" 0.04 0 -16777216 true "" "plot [deaths] of one-of statistic_agents with [age_group = age_group_0_9]"
+"10-19" 0.04 0 -7500403 true "" "plot [deaths] of one-of statistic_agents with [age_group = age_group_10_19]"
+"20-29" 0.04 0 -2064490 true "" "plot [deaths] of one-of statistic_agents with [age_group = age_group_20_29]"
+"30-39" 0.04 0 -955883 true "" "plot [deaths] of one-of statistic_agents with [age_group = age_group_30_39]"
+"40-49" 0.04 0 -6459832 true "" "plot [deaths] of one-of statistic_agents with [age_group = age_group_40_49]"
+"50-59" 0.04 0 -1184463 true "" "plot [deaths] of one-of statistic_agents with [age_group = age_group_50_59]"
+"60-69" 0.04 0 -10899396 true "" "plot [deaths] of one-of statistic_agents with [age_group = age_group_60_69]"
+"70-79" 0.04 0 -13840069 true "" "plot [deaths] of one-of statistic_agents with [age_group = age_group_70_79]"
+">=80" 0.04 0 -14835848 true "" "plot [deaths] of one-of statistic_agents with [age_group = age_group_80]"
 
 SWITCH
 2036
@@ -1208,7 +1398,7 @@ SWITCH
 272
 show_plot_3?
 show_plot_3?
-1
+0
 1
 -1000
 
@@ -1228,15 +1418,15 @@ true
 true
 ";set-plot-y-range 0 ((count humans / 9) + 50)" "if not show_plot_2? [stop]"
 PENS
-"0-9" 0.04 0 -16777216 true "" "plot count humans with [age-group = age_group_0_9 and infected?]"
-"10-19" 0.04 0 -7500403 true "" "plot count humans with [age-group = age_group_10_19 and infected?]"
-"20-29" 0.04 0 -2064490 true "" "plot count humans with [age-group = age_group_20_29 and infected?]"
-"30-39" 0.04 0 -955883 true "" "plot count humans with [age-group = age_group_30_39 and infected?]"
-"40-49" 0.04 0 -6459832 true "" "plot count humans with [age-group = age_group_40_49 and infected?]"
-"50-59" 0.04 0 -1184463 true "" "plot count humans with [age-group = age_group_50_59 and infected?]"
-"60-69" 0.04 0 -10899396 true "" "plot count humans with [age-group = age_group_60_69 and infected?]"
-"70-79" 0.04 0 -13840069 true "" "plot count humans with [age-group = age_group_70_79 and infected?]"
-">=80" 0.04 0 -14835848 true "" "plot count humans with [age-group = age_group_80 and infected?]"
+"0-9" 0.04 0 -16777216 true "" "plot count humans with [age_group = age_group_0_9 and infected?]"
+"10-19" 0.04 0 -7500403 true "" "plot count humans with [age_group = age_group_10_19 and infected?]"
+"20-29" 0.04 0 -2064490 true "" "plot count humans with [age_group = age_group_20_29 and infected?]"
+"30-39" 0.04 0 -955883 true "" "plot count humans with [age_group = age_group_30_39 and infected?]"
+"40-49" 0.04 0 -6459832 true "" "plot count humans with [age_group = age_group_40_49 and infected?]"
+"50-59" 0.04 0 -1184463 true "" "plot count humans with [age_group = age_group_50_59 and infected?]"
+"60-69" 0.04 0 -10899396 true "" "plot count humans with [age_group = age_group_60_69 and infected?]"
+"70-79" 0.04 0 -13840069 true "" "plot count humans with [age_group = age_group_70_79 and infected?]"
+">=80" 0.04 0 -14835848 true "" "plot count humans with [age_group = age_group_80 and infected?]"
 
 SWITCH
 2033
@@ -1382,7 +1572,7 @@ Resultados Generales\n
 MONITOR
 1825
 68
-1909
+1917
 129
 Días
 ceiling (ticks / 24)
@@ -1391,10 +1581,10 @@ ceiling (ticks / 24)
 15
 
 MONITOR
-1920
-70
-2006
-131
+1927
+68
+2019
+129
 R0
 calculate_R0
 2
@@ -1402,10 +1592,10 @@ calculate_R0
 15
 
 MONITOR
-1826
-136
-2006
-177
+1825
+184
+2021
+225
 % Personas infectadas
 %infected
 2
@@ -1413,10 +1603,10 @@ MONITOR
 10
 
 MONITOR
-1827
-183
-2005
-224
+1825
+230
+2021
+271
 # Personas infectadas
 count humans with [infected?]
 0
@@ -1424,10 +1614,10 @@ count humans with [infected?]
 10
 
 MONITOR
-1827
-232
-2006
-273
+1825
+276
+2022
+317
 # Número de muertos
 number_of_deaths
 0
@@ -1435,12 +1625,12 @@ number_of_deaths
 10
 
 MONITOR
-1827
-280
-2007
-321
+1825
+322
+2023
+363
 # Número de recuperados
-count humans with [not infected? and gotinfection?]
+count humans with [not infected? and got_infection?]
 0
 1
 10
@@ -1661,9 +1851,9 @@ HORIZONTAL
 
 SLIDER
 687
-422
+427
 948
-455
+460
 keep_social_distancing_80
 keep_social_distancing_80
 0
@@ -1675,10 +1865,10 @@ NIL
 HORIZONTAL
 
 TEXTBOX
-974
-350
-1124
-368
+977
+390
+1127
+408
 Parametro adicional
 12
 0.0
@@ -1702,7 +1892,7 @@ true
 PENS
 "Covid-19 Negativo" 0.04 0 -10899396 true "" "plot count humans with [not infected?]"
 "Covid-19 Positivo" 0.04 0 -2674135 true "" "plot count humans with [infected?]"
-"Recuperados" 0.04 0 -7500403 true "" "plot count humans with [not infected? and gotinfection?]"
+"Recuperados" 0.04 0 -7500403 true "" "plot count humans with [not infected? and got_infection?]"
 
 SWITCH
 2033
@@ -1731,15 +1921,15 @@ true
 true
 "" "if not show_plot0? [stop]"
 PENS
-"0-9" 0.04 0 -16777216 true "" "plot count humans with [age-group = age_group_0_9 and infected? and not ontreatment?]"
-"10-19" 0.04 0 -7500403 true "" "plot count humans with [age-group = age_group_10_19 and infected? and not ontreatment?]"
-"20-29" 0.04 0 -2674135 true "" "plot count humans with [age-group = age_group_20_29 and infected? and not ontreatment?]"
-"30-39" 0.04 0 -955883 true "" "plot count humans with [age-group = age_group_30_39 and infected? and not ontreatment?]"
-"40-49" 0.04 0 -6459832 true "" "plot count humans with [age-group = age_group_40_49 and infected? and not ontreatment?]"
-"50-59" 0.04 0 -1184463 true "" "plot count humans with [age-group = age_group_0_9 and infected? and not ontreatment?]"
-"60-69" 0.04 0 -10899396 true "" "plot count humans with [age-group = age_group_60_69 and infected? and not ontreatment?]"
-"70-79" 0.04 0 -13840069 true "" "plot count humans with [age-group = age_group_70_79 and infected? and not ontreatment?]"
-">=80" 0.04 0 -14835848 true "" "plot count humans with [age-group = age_group_80 and infected? and not ontreatment?]"
+"0-9" 0.04 0 -16777216 true "" "plot count humans with [age_group = age_group_0_9 and infected? and not on_treatment?]"
+"10-19" 0.04 0 -7500403 true "" "plot count humans with [age_group = age_group_10_19 and infected? and not on_treatment?]"
+"20-29" 0.04 0 -2674135 true "" "plot count humans with [age_group = age_group_20_29 and infected? and not on_treatment?]"
+"30-39" 0.04 0 -955883 true "" "plot count humans with [age_group = age_group_30_39 and infected? and not on_treatment?]"
+"40-49" 0.04 0 -6459832 true "" "plot count humans with [age_group = age_group_40_49 and infected? and not on_treatment?]"
+"50-59" 0.04 0 -1184463 true "" "plot count humans with [age_group = age_group_0_9 and infected? and not on_treatment?]"
+"60-69" 0.04 0 -10899396 true "" "plot count humans with [age_group = age_group_60_69 and infected? and not on_treatment?]"
+"70-79" 0.04 0 -13840069 true "" "plot count humans with [age_group = age_group_70_79 and infected? and not on_treatment?]"
+">=80" 0.04 0 -14835848 true "" "plot count humans with [age_group = age_group_80 and infected? and not on_treatment?]"
 
 SWITCH
 2033
@@ -1754,31 +1944,31 @@ show_plot0?
 
 INPUTBOX
 1826
-345
+443
 1987
-405
+503
 iterations
-0.0
+1.0
 1
 0
 Number
 
 INPUTBOX
-1827
-418
-1990
-478
+1826
+508
+1989
+568
 name_of_experiment
-prueba7
+simulacion1
 1
 0
 String
 
 SLIDER
-685
-492
-944
-525
+687
+501
+946
+534
 %isolated_detected
 %isolated_detected
 0
@@ -1790,22 +1980,86 @@ SLIDER
 HORIZONTAL
 
 SWITCH
-686
-541
-881
-574
+974
+458
+1127
+491
 log_infection_data?
 log_infection_data?
 1
 1
 -1000
 
+SWITCH
+687
+541
+947
+574
+intermittent_quarantine?
+intermittent_quarantine?
+1
+1
+-1000
+
+MONITOR
+1825
+367
+2023
+412
+# Número de personas en tratamiento
+count humans with [on_treatment?]
+17
+1
+11
+
+MONITOR
+1825
+134
+2019
+179
+# Población Total
+count humans
+17
+1
+11
+
+TEXTBOX
+1828
+424
+1978
+442
+Datos para Simulación
+12
+0.0
+1
+
+TEXTBOX
+690
+476
+943
+504
+Parametros Cuarentenas y Restricciones
+12
+0.0
+1
+
+SWITCH
+972
+333
+1124
+366
+prioritise_elderly?
+prioritise_elderly?
+1
+1
+-1000
+
 @#$#@#$#@
-## WHAT IS IT?
+## ¿QUÉ ES?
 
-(a general understanding of what the model is trying to show or explain)
+Esta simulación de modelo basado en agentes muestra el como se ve afectada una población de agentes frente a la expasión de un virus, en este caso el COVID-19.
 
-## HOW IT WORKS
+## ¿CÓMO FUNCIONA?
 
 Se comienza con una población inicial, donde cada agente pertenece a un grupo etario. Cada grupo etario puede desplazarse a cierta velocidad, utilizar o no mascarillas y respetar o no el distanciamiento social. Al inicio de cada simulación tambien se presenta una cantidad de agentes infectados los los cuales tienen la posibilidad de infectar al resto de agentes. 
 
@@ -1826,12 +2080,14 @@ Cada agente presenta las siguientes características:
   infection_detected? ;; Contagiado con infeccion detectada
   days_to_detect ;; Días que pasan desde el dia 1 a que es detectado
   effective_isolation? ;; Contagiado con aislamiento efectivo
+  group ;; Grupo de cuarentena al que pertenece (útil si se activan las cuarentenas intermitentes)
+  can_move? ;; Si se puede mover segun su grupo (útil si se activan las cuarentenas intermitentes)
 
 La capacidad de moverse del grupo etario, el uso de mascarilla y distanciamiento social, definen la probabilidad de ser contagiado por otro agente.
 
 Los días de sitomas graves, si recibe o no tratamiento y la tasa de mortalidad del grupo etario define si el paciente puede morir por la enfermedad.
 
-Los agentes contagiados, pueden ser detectados de forma aleatoria entre el día 1 al día 15 de su contagio, por lo que una vez detectado y dependiendo del parametro "%isolated_detected" puede asignarse una población infectada aislada la cual no podra moverse y contagiar al resto.
+Los agentes contagiados, pueden ser detectados de forma aleatoria entre el día 1 al día 15 de su contagio, por lo que una vez detectado y dependiendo del parámetro "%isolated_detected" puede asignarse una población infectada aislada la cual no podra moverse y contagiar al resto.
 
 Constantemente se realiza una revisión del estado de salud de la poblacion, donde se verifica la capacidad para tratar a los contagiados, la detección del contagio y su posibilidad de muerte por la enfermedad.
 
@@ -1847,7 +2103,7 @@ Los agenets podrán moverse siempre y cuando la velocidad de movimiento de su gr
 *Por caracteristicas del agente contagiado:
 Si el agente contagiado se encuentra en tratamiento este tiene mayor posibilidad de sobrevivir a la enfermedad, además no cantaiga al resto y no puede desplazarse. La cantidad de agentes en tratamiento depende de la capacidad hospitalaria.
 
-Si el agente contagiado es un contagiado detectado y está dentro de la población infectada aislada el agente no se podrá desplazar y no podrá contagiar a otros. La cantidad de agentes en aislamiento efectivo depende del parametro "%isolated_detected" el cual representa el porcentaje de agentes detectados que pasarán a aislamiento efectivo.
+Si el agente contagiado es un contagiado detectado y está dentro de la población infectada aislada el agente no se podrá desplazar y no podrá contagiar a otros. La cantidad de agentes en aislamiento efectivo depende del parámetro "%isolated_detected" el cual representa el porcentaje de agentes detectados que pasarán a aislamiento efectivo.
 
 
 Código de Colores:
@@ -1859,31 +2115,56 @@ Cada grupo etario posee un color característico el cual se puede ver tambien en
 -Si es un agente recuperado su color cambia a azul.
 
 
-## HOW TO USE IT
+## PARÁMETROS
 
-(how to use the model, including a description of each of the items in the Interface tab)
+*Población por rango etario:
+En este apartado se encuentran unos deslizadores con los cuales se puede configurar la población inicial de cada rango de edad.
 
-## THINGS TO NOTICE
+*Velocidad de movimiento (Repeticion de un salto de 1mt n veces)
+En este apartado se encuentran unos deslizadores con los cuales se puede configurar la velocidad de desplazamiento de cada rango de edad.
 
-(suggested things for the user to notice while running the model)
+*Autocuidado
+En este apartado se encuentran unos interruptores con los caules se puede configurar el uso de mascarilla de cada rango de edad.
 
-## THINGS TO TRY
+*parámetros interacciones sociales
+En este apartado se encuentran unos deslizadores con los cuales se puede configurar el distanciamiento social de cada rango de edad.
 
-(suggested things for the user to try to do (move sliders, switches, etc.) with the model)
+*parámetros Cuarentenas y Restricciones
+En este apartado se encuentra: 
+-Un deslizador el cual representa la cantidad de población infectada por el virus y que se encuentra detectada que será aislada.
+-Un interruptor con el cual se podrá activar o desactivar las cuarentenas intermitentes para cada simulación.
 
-## EXTENDING THE MODEL
+*parámetros medicos
+En este apartado se encuentra:
+-Un deslizador con el cual se puede configurar la cantidad de camas disponibles para el tratamiento de personas infectadas.
+-Un deslizador con el cual se puede configurar el porcentaje de población inicialmente infectada.
+-Un deslizador con el cual se puede configurar el pormedio de días que dura la infección.
+-Un deslizador con el cual se puede configurar el pormedio de días con síntomas.
+-Un deslizador con el cual se puede configurar el pormedio de días que debe tener un infectado para infectar a otros.
+-Un deslizador con el cual se puede configurar la máxima distancia a la cual un infecatdo puede contagiar.
+-Un interruptor con el cual se podrá activar o desactivar que la priorización de la tercera edad para el tratamiento del virus.
 
-(suggested things to add or change in the Code tab to make the model more complicated, detailed, accurate, etc.)
+*parámetros adicionales
+-Un deslizador con el cual se puede configurar la cantidad de metros por patch.
 
-## NETLOGO FEATURES
+## ¿CÓMO UTILIZAR?
 
-(interesting or unusual features of NetLogo that the model uses, particularly in the Code tab; or where workarounds were needed for missing features)
+Primero se deben ingresar el numero de iteraciones que se realizarán para la simulación y el nombre del documento CSV el cual contendrá los resultados de la simulación.
 
-## RELATED MODELS
+Se deben configurar todos los parámetros de entrada (se recomienda comenzar con los valores por defecto). Uno de los parámetros más importantes es las "intermittent_quarantine?" el cual representa las cuarentenas intermitentes, una restricción para la población de agentes.
+
+Luego de ajustar los parámetros, se debe pulsar el botón de "Preparar" con el cual se crearan los agentes y se limpiarán las estadisticas de las simulaciones anteriores, después de eso se puede pulsar el boton de "Comenzar/Pausar" para comenzar la simulación, la cual podrás pausar en cualquier momento y poder retomarla. El progreso de la simulación lo podrás ver al lado derecho de la pantalla, donde verás una serie de monitores y gráficos de la población.
+
+
+## AMPLIANDO EL MODELO
+
+Algunas de las cosas que se pueden configurar directamente en el codigo es la tasa de moratlidad de cada rango etario, se recomienda investigar la tasa de mortalidad reportada por distintos paises y probarla en el codigo.
+
+## MODELOS RELACIONADOS - TO DO
 
 (models in the NetLogo Models Library and elsewhere which are of related interest)
 
-## CREDITS AND REFERENCES
+## CREDITOS Y REFERENCIAS - TO DO
 
 (a reference to the model's URL on the web if it has one, as well as any other necessary credits, citations, and links)
 @#$#@#$#@
