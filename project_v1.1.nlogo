@@ -29,6 +29,7 @@ globals [
   logged_transmitters   ;; Transmisores registrados
   R0_global   ;; Número de reproducción
   prioritise_elderly?   ;; Priorizar a los ancianos?
+  week  ;; Semana
   filename ;; Nombre del archivo CSV
 ]
 
@@ -48,6 +49,8 @@ humans-own [
   infection_detected? ;; Contagiado con infeccion detectada
   days_to_detect ;; Días que pasan desde el dia 1 a que es detectado
   effective_isolation? ;; Contagiado con aislamiento efectivo
+  group ;; Grupo de cuarentena al que pertenece
+  can_move? ;; Si se puede mover segun su grupo
 ]
 
 statistic_agents-own [
@@ -82,7 +85,7 @@ end
 to infection_exposure
   if (not gotinfection?) [
     let people_around humans-on neighbors
-    let infected_around people_around with [infected? = true and not effective_isolation? and not ontreatment? and ( ongoing-infection-hours > (average_days_for_contagion * 24 )) ]
+    let infected_around people_around with [infected? = true and not effective_isolation? and not ontreatment? and can_move? and ( ongoing-infection-hours > (average_days_for_contagion * 24 )) ]
     let number_of_infected_around count infected_around
     if number_of_infected_around > 0 [
       let within_contagion_distance (random(metres_per_patch) + 1) ;; Asumiendo que cada patch representa los metros por patch.
@@ -218,7 +221,7 @@ to check_health_state
 end
 
 to move [ #speed ]
-  if (not ontreatment? and not effective_isolation?) [
+  if (can_move? and not ontreatment? and not effective_isolation?) [
     rt random-float 360
     fd #speed
   ]
@@ -258,6 +261,7 @@ to setup-globals
   set cumulative_aware_of_infection 0
   set last_cumulative_aware_of_infection 0
   set logged_transmitters[]
+  set week 0
 end
 
 to setup_statistic_agent [ #age-group ]
@@ -269,7 +273,7 @@ to setup_statistic_agent [ #age-group ]
   ]
 end
 
-to setup-people [#number #age-group]
+to setup-people [#number #age-group #group]
   create-humans #number [
       let random_x 0
       let random_y 0
@@ -289,6 +293,8 @@ to setup-people [#number #age-group]
       set infection_detected? false
       set days_to_detect 0
       set effective_isolation? false
+      set group #group
+      set can_move? false
 
 
       ifelse age-group <= age_group_0_9 [
@@ -445,6 +451,37 @@ to setup-people [#number #age-group]
      ]
 end
 
+to group-divider[#number #age-group]
+  let total_group #number
+  let group1 0
+  let group2 0
+  let group3 0
+  if (remainder  total_group 3 = 0) [
+    set group1 total_group / 3
+    set group2 total_group / 3
+    set group3 total_group / 3
+    setup-people group1 #age-group 1
+    setup-people group2 #age-group 2
+    setup-people group3 #age-group 3
+  ]
+  if (remainder  total_group 3 = 1) [
+    set group1 floor (total_group / 3) + 1
+    set group2 floor (total_group / 3)
+    set group3 floor (total_group / 3)
+    setup-people group1 #age-group 1
+    setup-people group2 #age-group 2
+    setup-people group3 #age-group 3
+  ]
+  if (remainder  total_group 3 = 2) [
+    set group1 floor (total_group / 3) + 1
+    set group2 floor (total_group / 3) + 1
+    set group3 floor (total_group / 3)
+    setup-people group1 #age-group 1
+    setup-people group2 #age-group 2
+    setup-people group3 #age-group 3
+  ]
+end
+
 to setup
   clear-all
 
@@ -456,17 +493,22 @@ to setup
   ]
 
   setup-globals
-  setup-people population_0-9 age_group_0_9
-  setup-people population_10-19 age_group_10_19
-  setup-people population_20-29 age_group_20_29
-  setup-people population_30-39 age_group_30_39
-  setup-people population_40-49 age_group_40_49
-  setup-people population_50-59 age_group_50_59
-  setup-people population_60-69 age_group_60_69
-  setup-people population_70-79 age_group_70_79
-  setup-people population_80 age_group_80
+  group-divider population_0-9 age_group_0_9
+  group-divider population_0-9 age_group_0_9
+  group-divider population_10-19 age_group_10_19
+  group-divider population_20-29 age_group_20_29
+  group-divider population_30-39 age_group_30_39
+  group-divider population_40-49 age_group_40_49
+  group-divider population_50-59 age_group_50_59
+  group-divider population_60-69 age_group_60_69
+  group-divider population_70-79 age_group_70_79
+  group-divider population_80 age_group_80
+
   let affected_number round (count humans * (initial_infected_population / 100))
   infect_people affected_number
+
+  ask humans with [group = 1] [set can_move? true]
+  show "Comienza a moverse grupo 1"
 
   setup_statistic_agent age_group_0_9
   setup_statistic_agent age_group_10_19
@@ -654,6 +696,34 @@ to go
   [
       ask humans [ check_health_state ]
   ]
+
+  let temp_weeker week
+  set week floor (ticks / 168)
+
+  if (temp_weeker != week) [
+      ifelse (remainder week 3 = 0) [
+      show "Se mueve grupo 1"
+      ask humans with [group = 1] [set can_move? true]
+      ask humans with [group = 2] [set can_move? false]
+      ask humans with [group = 3] [set can_move? false]
+      ][
+      ifelse (remainder week 3 = 1) [
+        show "Se mueve grupo 2"
+        ask humans with [group = 1] [set can_move? false]
+        ask humans with [group = 2] [set can_move? true]
+        ask humans with [group = 3] [set can_move? false]
+      ][
+        show "Se mueve grupo 3"
+        ask humans with [group = 1] [set can_move? false]
+        ask humans with [group = 2] [set can_move? false]
+        ask humans with [group = 3] [set can_move? true]
+      ]
+    ]
+  ]
+
+
+
+
   ask humans [
 
         ifelse age-group <= 9 [
@@ -709,7 +779,7 @@ to go
         ]
       ]
 
-  ask humans [ infection_exposure ]
+  ask humans with [can_move?] [ infection_exposure ]
 
   ifelse elapsed-day-hours >= 24
   [
@@ -872,36 +942,6 @@ Days
 HORIZONTAL
 
 SLIDER
-282
-1090
-545
-1123
-chance_of_severe_infection
-chance_of_severe_infection
-0
-100
-18.5
-0.5
-1
-%
-HORIZONTAL
-
-SLIDER
-825
-1167
-1089
-1200
-severity_death_chance_multiplier
-severity_death_chance_multiplier
-1
-3
-2.8
-0.1
-1
-NIL
-HORIZONTAL
-
-SLIDER
 972
 79
 1230
@@ -915,38 +955,6 @@ medical_care_capacity
 1
 Beds
 HORIZONTAL
-
-SWITCH
-1110
-925
-1324
-958
-complete_lockdown?
-complete_lockdown?
-1
-1
--1000
-
-TEXTBOX
-826
-923
-976
-941
-Acciones
-12
-0.0
-1
-
-SWITCH
-1101
-970
-1285
-1003
-partial_lockdown?
-partial_lockdown?
-1
-1
--1000
 
 SLIDER
 223
@@ -991,9 +999,9 @@ SLIDER
 population_0-9
 population_0-9
 0
-10000
+150
 100.0
-100
+1
 1
 NIL
 HORIZONTAL
@@ -1006,9 +1014,9 @@ SLIDER
 population_10-19
 population_10-19
 0
-10000
+150
 100.0
-100
+1
 1
 NIL
 HORIZONTAL
@@ -1021,9 +1029,9 @@ SLIDER
 population_20-29
 population_20-29
 0
-10000
+150
 100.0
-100
+1
 1
 NIL
 HORIZONTAL
@@ -1036,9 +1044,9 @@ SLIDER
 population_30-39
 population_30-39
 0
-10000
+150
 100.0
-100
+1
 1
 NIL
 HORIZONTAL
@@ -1051,9 +1059,9 @@ SLIDER
 population_40-49
 population_40-49
 0
-10000
+150
 100.0
-100
+1
 1
 NIL
 HORIZONTAL
@@ -1066,9 +1074,9 @@ SLIDER
 population_50-59
 population_50-59
 0
-10000
+150
 100.0
-100
+1
 1
 NIL
 HORIZONTAL
@@ -1081,9 +1089,9 @@ SLIDER
 population_60-69
 population_60-69
 0
-10000
+150
 100.0
-100
+1
 1
 NIL
 HORIZONTAL
@@ -1096,9 +1104,9 @@ SLIDER
 population_70-79
 population_70-79
 0
-10000
+150
 100.0
-100
+1
 1
 NIL
 HORIZONTAL
@@ -1111,9 +1119,9 @@ SLIDER
 population_80
 population_80
 0
-10000
+150
 100.0
-100
+1
 1
 NIL
 HORIZONTAL
@@ -1131,122 +1139,6 @@ initial_infected_population
 0.01
 1
 %
-HORIZONTAL
-
-SLIDER
-572
-876
-761
-909
-active_schools
-active_schools
-0
-30
-0.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-576
-923
-762
-956
-active_colleges
-active_colleges
-0
-30
-0.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-576
-965
-765
-998
-active_hosp_venues
-active_hosp_venues
-0
-50
-0.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-574
-1008
-766
-1041
-active_public_transport_lines
-active_public_transport_lines
-0
-100
-0.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-575
-1051
-768
-1084
-active_adult_venues
-active_adult_venues
-0
-30
-0.0
-1
-1
-NIL
-HORIZONTAL
-
-SWITCH
-903
-1052
-1098
-1085
-log_infection_data?
-log_infection_data?
-1
-1
--1000
-
-SLIDER
-573
-1091
-770
-1124
-people_entering_city_per_day
-people_entering_city_per_day
-0
-1000
-0.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-1116
-1165
-1312
-1198
-infected_visitors
-infected_visitors
-0
-100
-0.0
-1
-1
-NIL
 HORIZONTAL
 
 BUTTON
@@ -1316,7 +1208,7 @@ SWITCH
 272
 show_plot_3?
 show_plot_3?
-0
+1
 1
 -1000
 
@@ -1866,7 +1758,7 @@ INPUTBOX
 1987
 405
 iterations
-1.0
+0.0
 1
 0
 Number
@@ -1896,6 +1788,17 @@ SLIDER
 1
 %
 HORIZONTAL
+
+SWITCH
+686
+541
+881
+574
+log_infection_data?
+log_infection_data?
+1
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -1934,6 +1837,9 @@ Constantemente se realiza una revisión del estado de salud de la poblacion, don
 
 
 Desplazamiento de los agentes:
+
+*Cuarentena Intermitente
+La población total de agentes se encuentra dividida en tres grupos, donde cada grupo tiene la posibilidad de desplazarse durante una semana cada dos semanas, por lo que todas las semanas se mueve un grupo distinto.
 
 *Por parámetro:
 Los agenets podrán moverse siempre y cuando la velocidad de movimiento de su grupo etario se lo permita, si su velocidad es 0 se asume un aislamiento del agente, por lo cual su probabilidad de contagiarse es 0. 
