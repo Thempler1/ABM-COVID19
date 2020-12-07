@@ -1030,7 +1030,7 @@ average_days_for_contagion
 average_days_for_contagion
 0
 100
-2.0
+3.0
 1
 1
 Days
@@ -1060,7 +1060,7 @@ keep_social_distancing_0-9
 keep_social_distancing_0-9
 0
 4
-0.0
+1.0
 0.5
 1
 NIL
@@ -1110,7 +1110,7 @@ average_infection_length
 average_infection_length
 1
 60
-37.0
+15.0
 1
 1
 Days
@@ -1125,7 +1125,7 @@ average_symptoms_show
 average_symptoms_show
 4
 15
-15.0
+10.0
 1
 1
 Days
@@ -1140,7 +1140,7 @@ medical_care_capacity
 medical_care_capacity
 0
 250
-11.0
+10.0
 1
 1
 Beds
@@ -1325,7 +1325,7 @@ initial_infected_population
 initial_infected_population
 0
 100
-1.0
+2.0
 1
 1
 %
@@ -1652,7 +1652,7 @@ SWITCH
 108
 use_mask_0-9
 use_mask_0-9
-1
+0
 1
 -1000
 
@@ -1663,7 +1663,7 @@ SWITCH
 149
 use_mask_10-19
 use_mask_10-19
-1
+0
 1
 -1000
 
@@ -1674,7 +1674,7 @@ SWITCH
 193
 use_mask_20-29
 use_mask_20-29
-1
+0
 1
 -1000
 
@@ -1685,7 +1685,7 @@ SWITCH
 238
 use_mask_30-39
 use_mask_30-39
-1
+0
 1
 -1000
 
@@ -1696,7 +1696,7 @@ SWITCH
 285
 use_mask_40-49
 use_mask_40-49
-1
+0
 1
 -1000
 
@@ -1707,7 +1707,7 @@ SWITCH
 327
 use_mask_50-59
 use_mask_50-59
-1
+0
 1
 -1000
 
@@ -1718,7 +1718,7 @@ SWITCH
 369
 use_mask_60-69
 use_mask_60-69
-1
+0
 1
 -1000
 
@@ -1729,7 +1729,7 @@ SWITCH
 409
 use_mask_70-79
 use_mask_70-79
-1
+0
 1
 -1000
 
@@ -1740,7 +1740,7 @@ SWITCH
 448
 use_mask_80
 use_mask_80
-1
+0
 1
 -1000
 
@@ -1753,7 +1753,7 @@ keep_social_distancing_10-19
 keep_social_distancing_10-19
 0
 4
-0.0
+1.0
 0.5
 1
 NIL
@@ -1768,7 +1768,7 @@ keep_social_distancing_20-29
 keep_social_distancing_20-29
 0
 4
-0.0
+1.0
 0.5
 1
 NIL
@@ -1783,7 +1783,7 @@ keep_social_distancing_30-39
 keep_social_distancing_30-39
 0
 4
-0.0
+1.0
 0.5
 1
 NIL
@@ -1798,7 +1798,7 @@ keep_social_distancing_40-49
 keep_social_distancing_40-49
 0
 4
-0.0
+1.0
 0.5
 1
 NIL
@@ -1813,7 +1813,7 @@ keep_social_distancing_50-59
 keep_social_distancing_50-59
 0
 4
-0.0
+1.0
 0.5
 1
 NIL
@@ -1828,7 +1828,7 @@ keep_social_distancing_60-69
 keep_social_distancing_60-69
 0
 4
-0.0
+1.0
 0.5
 1
 NIL
@@ -1843,7 +1843,7 @@ keep_social_distancing_70-79
 keep_social_distancing_70-79
 0
 4
-0.0
+1.0
 0.5
 1
 NIL
@@ -1858,7 +1858,7 @@ keep_social_distancing_80
 keep_social_distancing_80
 0
 4
-0.0
+1.0
 0.5
 1
 NIL
@@ -1948,7 +1948,7 @@ INPUTBOX
 1987
 503
 iterations
-1.0
+0.0
 1
 0
 Number
@@ -1959,7 +1959,7 @@ INPUTBOX
 1989
 568
 name_of_experiment
-simulacion1
+Cuarentena Intermitente
 1
 0
 String
@@ -1997,7 +1997,7 @@ SWITCH
 574
 intermittent_quarantine?
 intermittent_quarantine?
-1
+0
 1
 -1000
 
@@ -2050,7 +2050,7 @@ SWITCH
 366
 prioritise_elderly?
 prioritise_elderly?
-1
+0
 1
 -1000
 
