@@ -710,6 +710,7 @@ to go_normal
     file-close
 
     set iterations iterations - 1
+    setup
     go_normal
   ]
 
@@ -880,6 +881,7 @@ to go_quarantine
     file-close
 
     set iterations iterations - 1
+    setup
     go_quarantine
   ]
 
@@ -1959,7 +1961,7 @@ INPUTBOX
 1989
 568
 name_of_experiment
-Cuarentena Intermitente
+test
 1
 0
 String
