@@ -19,6 +19,7 @@ globals [
   elapsed_day_hours ;; Horas transcurridas
   medical_care_used ;; Atención médica utilizada
   number_of_deaths  ;; Número de muertos
+  people_treated ;; numero de personas tratadas
   death_list        ;; Lista de muertos
   city_area_patches   ;; Parches del área de la ciudad
   cumulative_infected   ;; Infectados acumulados
@@ -165,12 +166,14 @@ to check_health_state
         ifelse age_group >= age_group_60_69 [
           if get_medical_care = true [
             set on_treatment? true
+            set people_treated people_treated + 1
           ]
         ]
         [
           if %medical-care-availability >= 25 [ ;; Si no es una persona mayor, solo reciba atención médica si la disponibilidad es> = 25%
             if get_medical_care = true [
               set on_treatment? true
+              set people_treated people_treated + 1
             ]
           ]
         ]
@@ -178,6 +181,7 @@ to check_health_state
       [
         if get_medical_care = true [
           set on_treatment? true
+          set people_treated people_treated + 1
         ]
       ]
     ]
@@ -262,6 +266,7 @@ to setup_globals
   set last_cumulative_aware_of_infection 0
   set logged_transmitters[]
   set week 0
+  set people_treated 0
 end
 
 to setup_statistic_agent [ #age_group ]
@@ -488,11 +493,13 @@ end
 to setup
   clear-all
 
-  set filename (word name_of_experiment ".csv")
+  ;set filename (word name_of_experiment ".csv")
+  set filename (word name_of_experiment "_daily.csv")
 
   if not file-exists? filename [
-    file-open filename
+    ;file-open filename
     start-output-file
+    show "Ficheros no existen, creando"
   ]
 
   setup_globals
@@ -511,14 +518,10 @@ to setup
 
   ask humans with [group = 1] [set can_move? true]
   ifelse (intermittent_quarantine?) [
-    show "######################################"
     show "Simulación con cuarentena intermitente"
-    show "######################################"
     show "Comenzará a moverse grupo 1"
   ][
-    show "##########################"
     show "Simulación sin cuarentena"
-    show "##########################"
   ]
 
   setup_statistic_agent age_group_0_9
@@ -534,40 +537,40 @@ to setup
 end
 
 to start-output-file
-   file-open filename
-   file-type "Días transcurridos,"
-   file-type "Muertes de 0-9,"
-   file-type "Muertes de 10-19,"
-   file-type "Muertes de 20-29,"
-   file-type "Muertes de 30-39,"
-   file-type "Muertes de 40-49,"
-   file-type "Muertes de 50-59,"
-   file-type "Muertes de 60-69,"
-   file-type "Muertes de 70-79,"
-   file-type "Muertes de 80,"
-   file-type "Total muertes,"
-   file-type "Infectados de 0-9,"
-   file-type "Infectados de 10-19,"
-   file-type "Infectados de 20-29,"
-   file-type "Infectados de 30-39,"
-   file-type "Infectados de 40-49,"
-   file-type "Infectados de 50-59,"
-   file-type "Infectados de 60-69,"
-   file-type "Infectados de 70-79,"
-   file-type "Infectados de 80,"
-   file-type "Total infectados,"
-   file-type "Infectados sin tratamientos 0-9,"
-   file-type "Infectados sin tratamientos 10-19,"
-   file-type "Infectados sin tratamientos 20-29,"
-   file-type "Infectados sin tratamientos 30-39,"
-   file-type "Infectados sin tratamientos 40-49,"
-   file-type "Infectados sin tratamientos 50-59,"
-   file-type "Infectados sin tratamientos 60-69,"
-   file-type "Infectados sin tratamientos 70-79,"
-   file-type "Infectados sin tratamientos 80,"
-   file-type "Total Infectados sin tratamientos,"
-   ;; Etc., rest of column headers.
-   file-print ""
+  file-open (word name_of_experiment "_daily.csv")
+  let counter 0
+  while [counter <= 100] [
+    file-type (word counter ", ")
+    set counter counter + 1
+  ]
+  file-print ""
+  file-close
+
+  file-open (word name_of_experiment "_summary.csv")
+  file-type "Dias transcurridos,"
+  file-type "Muertes de 0-9,"
+  file-type "Muertes de 10-19,"
+  file-type "Muertes de 20-29,"
+  file-type "Muertes de 30-39,"
+  file-type "Muertes de 40-49,"
+  file-type "Muertes de 50-59,"
+  file-type "Muertes de 60-69,"
+  file-type "Muertes de 70-79,"
+  file-type "Muertes de 80,"
+  file-type "Total muertes,"
+  file-type "Infectados de 0-9,"
+  file-type "Infectados de 10-19,"
+  file-type "Infectados de 20-29,"
+  file-type "Infectados de 30-39,"
+  file-type "Infectados de 40-49,"
+  file-type "Infectados de 50-59,"
+  file-type "Infectados de 60-69,"
+  file-type "Infectados de 70-79,"
+  file-type "Infectados de 80,"
+  file-type "Total infectados,"
+  file-type "Total de personas tratadas"
+  file-print ""
+  file-close
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -624,12 +627,19 @@ to go
 end
 
 to go_normal
-
-  if iterations = 0 [
+  file-open (word name_of_experiment "_daily.csv")
+  if (iterations = 0) [
+    file-close
     stop
   ]
 
   if (count humans with [infected?] = 0) [
+    show "Fin de la iteración"
+    file-print ""
+    file-close
+    file-open (word name_of_experiment "_summary.csv")
+
+    let days ceiling (ticks / 24)
     ;; Variables temporales relacionadas a las muertes
     let deaths_0-9 [deaths] of one-of statistic_agents with [age_group = age_group_0_9]
     let deaths_10-19 [deaths] of one-of statistic_agents with [age_group = age_group_10_19]
@@ -654,24 +664,7 @@ to go_normal
     let infecteds_80 count humans with [age_group = age_group_80 and got_infection?]
     let totalInfecteds count humans with [not infected? and got_infection?]
 
-    ;; Variables relacionadas a las personas infectadas sin tratamiento
-    let notTreatment_0-9 count humans with [age_group = age_group_0_9 and not on_treatment?]
-    let notTreatment_10-19 count humans with [age_group = age_group_10_19 and not on_treatment?]
-    let notTreatment_20-29 count humans with [age_group = age_group_20_29 and not on_treatment?]
-    let notTreatment_30-39 count humans with [age_group = age_group_30_39 and not on_treatment?]
-    let notTreatment_40-49 count humans with [age_group = age_group_40_49 and not on_treatment?]
-    let notTreatment_50-59 count humans with [age_group = age_group_50_59 and not on_treatment?]
-    let notTreatment_60-69 count humans with [age_group = age_group_60_69 and not on_treatment?]
-    let notTreatment_70-79 count humans with [age_group = age_group_70_79 and not on_treatment?]
-    let notTreatment_80 count humans with [age_group = age_group_80 and not on_treatment?]
-    let totalNotTreatments count humans with [not on_treatment?]
-
-    let days ceiling (ticks / 24)
-
-    file-open filename
-
     file-type (word days ", ")
-
     file-type (word deaths_0-9 ", ")
     file-type (word deaths_10-19 ", ")
     file-type (word deaths_20-29 ", ")
@@ -682,7 +675,6 @@ to go_normal
     file-type (word deaths_70-79 ", ")
     file-type (word deaths_80 ", ")
     file-type (word totalDeaths ", ")
-
     file-type (word infecteds_0-9 ", ")
     file-type (word infecteds_10-19 ", ")
     file-type (word infecteds_20-29 ", ")
@@ -693,24 +685,15 @@ to go_normal
     file-type (word infecteds_70-79 ", ")
     file-type (word infecteds_80 ", ")
     file-type (word totalInfecteds ", ")
-
-    file-type (word notTreatment_0-9 ", ")
-    file-type (word notTreatment_10-19 ", ")
-    file-type (word notTreatment_20-29 ", ")
-    file-type (word notTreatment_30-39 ", ")
-    file-type (word notTreatment_40-49 ", ")
-    file-type (word notTreatment_50-59 ", ")
-    file-type (word notTreatment_60-69 ", ")
-    file-type (word notTreatment_70-79 ", ")
-    file-type (word notTreatment_80 ", ")
-    file-type (word totalNotTreatments ", ")
-
+    file-type (word people_treated ", ")
     file-print ""
-
     file-close
 
     set iterations iterations - 1
-    setup
+    if iterations != 0 [
+      show "Siguiente Iteración"
+      setup
+    ]
     go_normal
   ]
 
@@ -724,13 +707,13 @@ to go_normal
   ask humans [
 
         ifelse age_group <= 9 [
-         let mage_group_0-9 humans with [age_group = 9]
-         ask one-of mage_group_0-9 [ move move_0-9 ]
+          let mage_group_0-9 humans with [age_group = 9]
+          ask one-of mage_group_0-9 [ move move_0-9 ]
         ]
         [
           ifelse age_group <= 19 [
-           let mage_group_10-19 humans with [age_group = 19]
-           ask one-of mage_group_10-19 [ move move_10-19 ]
+            let mage_group_10-19 humans with [age_group = 19]
+            ask one-of mage_group_10-19 [ move move_10-19 ]
           ]
           [
             ifelse age_group <= 29 [
@@ -791,16 +774,27 @@ to go_normal
     set elapsed_day_hours elapsed_day_hours + 1
   ]
 
+  if ( ticks > 24 and remainder ticks 24 = 0 ) [
+    file-type (word count humans with [infected?] ", ")
+  ]
+
   tick
 end
 
 to go_quarantine
-
+  file-open (word name_of_experiment "_daily.csv")
   if iterations = 0 [
+    file-close
     stop
   ]
 
   if (count humans with [infected?] = 0) [
+    show "Fin de la iteración"
+    file-print ""
+    file-close
+    file-open (word name_of_experiment "_summary.csv")
+
+    let days ceiling (ticks / 24)
     ;; Variables temporales relacionadas a las muertes
     let deaths_0-9 [deaths] of one-of statistic_agents with [age_group = age_group_0_9]
     let deaths_10-19 [deaths] of one-of statistic_agents with [age_group = age_group_10_19]
@@ -825,24 +819,7 @@ to go_quarantine
     let infecteds_80 count humans with [age_group = age_group_80 and got_infection?]
     let totalInfecteds count humans with [not infected? and got_infection?]
 
-    ;; Variables relacionadas a las personas infectadas sin tratamiento
-    let notTreatment_0-9 count humans with [age_group = age_group_0_9 and not on_treatment?]
-    let notTreatment_10-19 count humans with [age_group = age_group_10_19 and not on_treatment?]
-    let notTreatment_20-29 count humans with [age_group = age_group_20_29 and not on_treatment?]
-    let notTreatment_30-39 count humans with [age_group = age_group_30_39 and not on_treatment?]
-    let notTreatment_40-49 count humans with [age_group = age_group_40_49 and not on_treatment?]
-    let notTreatment_50-59 count humans with [age_group = age_group_50_59 and not on_treatment?]
-    let notTreatment_60-69 count humans with [age_group = age_group_60_69 and not on_treatment?]
-    let notTreatment_70-79 count humans with [age_group = age_group_70_79 and not on_treatment?]
-    let notTreatment_80 count humans with [age_group = age_group_80 and not on_treatment?]
-    let totalNotTreatments count humans with [not on_treatment?]
-
-    let days ceiling (ticks / 24)
-
-    file-open filename
-
     file-type (word days ", ")
-
     file-type (word deaths_0-9 ", ")
     file-type (word deaths_10-19 ", ")
     file-type (word deaths_20-29 ", ")
@@ -853,7 +830,6 @@ to go_quarantine
     file-type (word deaths_70-79 ", ")
     file-type (word deaths_80 ", ")
     file-type (word totalDeaths ", ")
-
     file-type (word infecteds_0-9 ", ")
     file-type (word infecteds_10-19 ", ")
     file-type (word infecteds_20-29 ", ")
@@ -864,24 +840,15 @@ to go_quarantine
     file-type (word infecteds_70-79 ", ")
     file-type (word infecteds_80 ", ")
     file-type (word totalInfecteds ", ")
-
-    file-type (word notTreatment_0-9 ", ")
-    file-type (word notTreatment_10-19 ", ")
-    file-type (word notTreatment_20-29 ", ")
-    file-type (word notTreatment_30-39 ", ")
-    file-type (word notTreatment_40-49 ", ")
-    file-type (word notTreatment_50-59 ", ")
-    file-type (word notTreatment_60-69 ", ")
-    file-type (word notTreatment_70-79 ", ")
-    file-type (word notTreatment_80 ", ")
-    file-type (word totalNotTreatments ", ")
-
+    file-type (word people_treated ", ")
     file-print ""
-
     file-close
 
     set iterations iterations - 1
-    setup
+    if iterations != 0 [
+      show "Siguiente Iteración"
+      setup
+    ]
     go_quarantine
   ]
 
@@ -920,13 +887,13 @@ to go_quarantine
   ask humans [
 
         ifelse age_group <= 9 [
-         let mage_group_0-9 humans with [age_group = 9]
-         ask one-of mage_group_0-9 [ move move_0-9 ]
+          let mage_group_0-9 humans with [age_group = 9]
+          ask one-of mage_group_0-9 [ move move_0-9 ]
         ]
         [
           ifelse age_group <= 19 [
-           let mage_group_10-19 humans with [age_group = 19]
-           ask one-of mage_group_10-19 [ move move_10-19 ]
+            let mage_group_10-19 humans with [age_group = 19]
+            ask one-of mage_group_10-19 [ move move_10-19 ]
           ]
           [
             ifelse age_group <= 29 [
@@ -985,6 +952,10 @@ to go_quarantine
   ]
   [
     set elapsed_day_hours elapsed_day_hours + 1
+  ]
+
+  if ( ticks > 24 and remainder ticks 24 = 0 ) [
+    file-type (word count humans with [infected?] ", ")
   ]
 
   tick
@@ -1062,7 +1033,7 @@ keep_social_distancing_0-9
 keep_social_distancing_0-9
 0
 4
-1.0
+0.0
 0.5
 1
 NIL
@@ -1365,7 +1336,7 @@ NIL
 NIL
 NIL
 NIL
-0
+1
 
 PLOT
 2036
@@ -1654,7 +1625,7 @@ SWITCH
 108
 use_mask_0-9
 use_mask_0-9
-0
+1
 1
 -1000
 
@@ -1665,7 +1636,7 @@ SWITCH
 149
 use_mask_10-19
 use_mask_10-19
-0
+1
 1
 -1000
 
@@ -1676,7 +1647,7 @@ SWITCH
 193
 use_mask_20-29
 use_mask_20-29
-0
+1
 1
 -1000
 
@@ -1687,7 +1658,7 @@ SWITCH
 238
 use_mask_30-39
 use_mask_30-39
-0
+1
 1
 -1000
 
@@ -1698,7 +1669,7 @@ SWITCH
 285
 use_mask_40-49
 use_mask_40-49
-0
+1
 1
 -1000
 
@@ -1709,7 +1680,7 @@ SWITCH
 327
 use_mask_50-59
 use_mask_50-59
-0
+1
 1
 -1000
 
@@ -1720,7 +1691,7 @@ SWITCH
 369
 use_mask_60-69
 use_mask_60-69
-0
+1
 1
 -1000
 
@@ -1731,7 +1702,7 @@ SWITCH
 409
 use_mask_70-79
 use_mask_70-79
-0
+1
 1
 -1000
 
@@ -1742,7 +1713,7 @@ SWITCH
 448
 use_mask_80
 use_mask_80
-0
+1
 1
 -1000
 
@@ -1755,7 +1726,7 @@ keep_social_distancing_10-19
 keep_social_distancing_10-19
 0
 4
-1.0
+0.0
 0.5
 1
 NIL
@@ -1770,7 +1741,7 @@ keep_social_distancing_20-29
 keep_social_distancing_20-29
 0
 4
-1.0
+0.0
 0.5
 1
 NIL
@@ -1785,7 +1756,7 @@ keep_social_distancing_30-39
 keep_social_distancing_30-39
 0
 4
-1.0
+0.0
 0.5
 1
 NIL
@@ -1800,7 +1771,7 @@ keep_social_distancing_40-49
 keep_social_distancing_40-49
 0
 4
-1.0
+0.0
 0.5
 1
 NIL
@@ -1815,7 +1786,7 @@ keep_social_distancing_50-59
 keep_social_distancing_50-59
 0
 4
-1.0
+0.0
 0.5
 1
 NIL
@@ -1830,7 +1801,7 @@ keep_social_distancing_60-69
 keep_social_distancing_60-69
 0
 4
-1.0
+0.0
 0.5
 1
 NIL
@@ -1845,7 +1816,7 @@ keep_social_distancing_70-79
 keep_social_distancing_70-79
 0
 4
-1.0
+0.0
 0.5
 1
 NIL
@@ -1860,7 +1831,7 @@ keep_social_distancing_80
 keep_social_distancing_80
 0
 4
-1.0
+0.0
 0.5
 1
 NIL
@@ -1961,7 +1932,7 @@ INPUTBOX
 1989
 568
 name_of_experiment
-test
+Simulacion
 1
 0
 String
@@ -2052,7 +2023,7 @@ SWITCH
 366
 prioritise_elderly?
 prioritise_elderly?
-0
+1
 1
 -1000
 
