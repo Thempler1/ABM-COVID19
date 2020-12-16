@@ -16,16 +16,13 @@ globals [
   age_group_60_69   ;; Rango etario entre 60 y 69
   age_group_70_79   ;; Rango etario entre 70 y 79
   age_group_80      ;; Rango etario mayor a 80
-  elapsed_day_hours ;; Horas transcurridas
   medical_care_used ;; Atención médica utilizada
   number_of_deaths  ;; Número de muertos
   people_treated ;; numero de personas tratadas
   death_list        ;; Lista de muertos
   city_area_patches   ;; Parches del área de la ciudad
   cumulative_infected   ;; Infectados acumulados
-  last_cumulative   ;; Ultimo acumulado
-  cumulative_aware_of_infection   ;; Conocimiento de infección acumulativo
-  last_cumulative_aware_of_infection   ;; Última acumulación acumulativa de infección
+  cumulative_aware_of_infection   ;; Infectados con conocimiento de su infección acumulados
   logged_transmitters   ;; Transmisores registrados
   R0_global   ;; Número de reproducción
   week  ;; Semana
@@ -256,14 +253,11 @@ to setup_globals
   set age_group_60_69 69
   set age_group_70_79 79
   set age_group_80  80
-  set elapsed_day_hours 0
   set medical_care_used 0
   set number_of_deaths 0
   set cumulative_infected 0
-  set last_cumulative 0
   set city_area_patches patches with [ pcolor != black ]
   set cumulative_aware_of_infection 0
-  set last_cumulative_aware_of_infection 0
   set logged_transmitters[]
   set week 0
   set people_treated 0
@@ -761,19 +755,6 @@ to go_normal
 
   ask humans [ infection_exposure ]
 
-  ifelse elapsed_day_hours >= 24
-  [
-    if log_infection_data? [
-      let delta_cumulative cumulative_aware_of_infection / (last_cumulative_aware_of_infection + 1)
-      set last_cumulative_aware_of_infection cumulative_aware_of_infection
-      set last_cumulative cumulative_infected
-    ]
-    set elapsed_day_hours 1
-  ]
-  [
-    set elapsed_day_hours elapsed_day_hours + 1
-  ]
-
   if ( ticks > 24 and remainder ticks 24 = 0 ) [
     file-type (word count humans with [infected?] ", ")
   ]
@@ -941,18 +922,6 @@ to go_quarantine
 
   ask humans with [can_move?] [ infection_exposure ]
 
-  ifelse elapsed_day_hours >= 24
-  [
-    if log_infection_data? [
-      let delta_cumulative cumulative_aware_of_infection / (last_cumulative_aware_of_infection + 1)
-      set last_cumulative_aware_of_infection cumulative_aware_of_infection
-      set last_cumulative cumulative_infected
-    ]
-    set elapsed_day_hours 1
-  ]
-  [
-    set elapsed_day_hours elapsed_day_hours + 1
-  ]
 
   if ( ticks > 24 and remainder ticks 24 = 0 ) [
     file-type (word count humans with [infected?] ", ")
@@ -1921,7 +1890,7 @@ INPUTBOX
 1987
 503
 iterations
-0.0
+1.0
 1
 0
 Number
@@ -1951,17 +1920,6 @@ SLIDER
 1
 %
 HORIZONTAL
-
-SWITCH
-974
-458
-1127
-491
-log_infection_data?
-log_infection_data?
-1
-1
--1000
 
 SWITCH
 687
