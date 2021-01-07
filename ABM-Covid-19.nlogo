@@ -971,7 +971,7 @@ SLIDER
 average_days_for_contagion
 average_days_for_contagion
 0
-100
+60
 3.0
 1
 1
